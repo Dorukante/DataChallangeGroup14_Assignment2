@@ -137,7 +137,8 @@ class ContinuousEnvironment:
 
     def _on_agent_goal_collision(self, arbiter, space, data) -> None:
         """Callback for when the agent collides with a goal.
-        Increments the goals reached count and resets the agent."""
+        Increments the goals reached count.
+        Todo ensure we return a terminal state in step when all goals are reached."""
         agent_shape, goal_shape = arbiter.shapes
         goal_obj: Goal = self.goal_shapes_to_goals.get(goal_shape)
 
