@@ -2,8 +2,9 @@ import numpy as np
 import pygame
 import copy
 import pymunk
-from typing import Tuple, TypeAlias
+from typing import Tuple, TypeAlias, List, Dict
 from continuous_gui import ContinuousGUI
+import json
 
 Vector2: TypeAlias = Tuple[float, float]
 
@@ -54,13 +55,13 @@ class ContinuousEnvironment:
     GOAL_COLLISION_TYPE = 1  # collision type for goals
     AGENT_COLLISION_TYPE = 2  # collision type for agent
 
-    goal_shapes_to_goals: dict[pymunk.Shape, Goal] = {}  # maps pymunk shapes to Goal objects
-    current_goals: dict[Vector2, Goal] = {}  # current goals in the environment, maps position physical object
+    goal_shapes_to_goals: Dict[pymunk.Shape, Goal] = {}  # maps pymunk shapes to Goal objects
+    current_goals: Dict[Vector2, Goal] = {}  # current goals in the environment, maps position physical object
 
     agent_body: pymunk.Body = None  # body of the agent
     agent_shape: pymunk.Circle = None  # shape of the agent
 
-    obstacles: list[Tuple[pymunk.Body, pymunk.Shape]]  # list of obstacles in the environment
+    obstacles: List[Tuple[pymunk.Body, pymunk.Shape]]  # list of obstacles in the environment
 
     def reset_goals(self):
         for goal in self.current_goals:
@@ -93,10 +94,13 @@ class ContinuousEnvironment:
 
         self.agent_state = AgentState(self.start)
 
-    def __init__(self, goals: list[Vector2],
+    def __init__(self, 
+            goals: list[Vector2],
             start: Vector2,
-            additional_obstacles: list[tuple[Vector2, Vector2]],
-            use_gui: bool = True):
+            extents: Tuple[int, int] = (512, 512),
+            additional_obstacles: list[tuple[Vector2, Vector2]] = [],
+            use_gui: bool = True
+        ):
         self.goal_positions = goals
         self.start = start
 
@@ -109,7 +113,7 @@ class ContinuousEnvironment:
         self.action_space_size = 8
 
         # environment size, note that without boundaries the agent can move outside this
-        self.extents = (512, 512)
+        self.extents = extents
 
         self.use_gui = use_gui
         if use_gui:
@@ -129,11 +133,31 @@ class ContinuousEnvironment:
         self.add_obstacle((self.extents[0] - 10, 0), (10, self.extents[1]))  # right wall
         self.add_obstacle((0, self.extents[1] - 10), (self.extents[0], 10))  # top wall
 
-        for obstacle in additional_obstacles:
-            # obstacles are defined by their bottom left corner and size
-            self.add_obstacle(obstacle[0], obstacle[1])
+        for obs_data in additional_obstacles:
+            pos = tuple(obs_data["position"])
+            size = tuple(obs_data["size"])
+            self.add_obstacle(pos, size)
 
+    @classmethod
+    def load_from_file(cls, file_path: str, use_gui: bool = True) -> 'ContinuousEnvironment':
+        """Loads environment configuration from a JSON file."""
+        with open(file_path + '.json', 'r') as f:
+            config = json.load(f)
+        
+        parsed_obstacles = []
+        for obs_data in config.get("obstacles", []):
+            parsed_obstacles.append({
+                "position": tuple(obs_data["position"]),
+                "size": tuple(obs_data["size"])
+            })
 
+        return cls(
+            goals=[tuple(g) for g in config["goals"]],
+            start=tuple(config["start_position"]),
+            extents=tuple(config["extents"]),
+            additional_obstacles=parsed_obstacles,
+            use_gui=use_gui
+        )
 
     def _on_agent_goal_collision(self, arbiter, space, data) -> None:
         """Callback for when the agent collides with a goal.
