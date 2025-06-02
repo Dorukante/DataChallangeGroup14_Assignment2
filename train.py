@@ -115,24 +115,24 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run a continuous environment simulation.")
     parser.add_argument("-l", "--level_file", type=str, default="level_1",
                         help="Name of the level JSON file (without .json extension) to load. Default: level_1")
-    parser.add_argument("-e", "--num_episodes", type=int, default=5,
-                        help="Number of episodes to run. Default: 5")
+    parser.add_argument("-e", "--num_episodes", type=int, default=50,
+                        help="Number of episodes to run. Default: 50")
     parser.add_argument("-s", "--max_steps", type=int, default=1000,
                         help="Maximum steps per episode. Default: 1000")
     parser.add_argument("--use-gui", action="store_true",
                         help="Run the simulation with the GUI.")
     parser.add_argument("--agent", type=str, default="dqn", choices=["dqn"],
                         help="Type of agent to use. Default: random")
-    parser.add_argument("--gamma", type=float, default=0.99, help="Discount factor gamma.")
+    parser.add_argument("--gamma", type=float, default=0.9, help="Discount factor gamma.")
     parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate")
     parser.add_argument("--buffer", type=int, default=10000, help="Maximum capacity of the replay buffer")
     parser.add_argument("--batch", type=int, default=64, help="Batch size for learning")
     parser.add_argument("--epsilon_start", type=float, default=1.0, help="Initial value for epsilon")
     parser.add_argument("--epsilon_end", type=float, default=0.01, help="Minimum value for epsilon")
-    parser.add_argument("--epsilon_decay", type=float, default=0.995, help=" Decay rate for epsilon")
+    parser.add_argument("--epsilon_decay", type=float, default=0.9999, help=" Decay rate for epsilon")
     parser.add_argument("--state_dim", type=int, default=0.995, help="  Dimensionality of the state space.")
     parser.add_argument("--hidden_dim", type=int, default=128, help=" Number of units in hidden layers of the DQN")
-    
+
 
     args = parser.parse_args()
     main(args)
