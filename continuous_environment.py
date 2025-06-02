@@ -172,8 +172,8 @@ class ContinuousEnvironment:
 
     def _on_agent_goal_collision(self, arbiter, space, data) -> None:
         """Callback for when the agent collides with a goal.
-        Increments the goals reached count.
-        Todo ensure we return a terminal state in step when all goals are reached."""
+        Increments the goals reached count."""
+
         agent_shape, goal_shape = arbiter.shapes
         goal_obj: Goal = self.goal_shapes_to_goals.get(goal_shape)
 
@@ -220,9 +220,9 @@ class ContinuousEnvironment:
         # update things that changed here
         self.agent_state.position = self.agent_body.position
 
-        self.world_stats["total_time"] += dt
+        is_terminal = len(self.current_goals) == 0
 
-        return self.get_agent_state(), False
+        return self.get_agent_state(), is_terminal
 
     def set_agent_velocity(self, vx: float, vy: float):
         """Set the agent's linear velocity."""
