@@ -13,14 +13,23 @@ except ImportError:
 def reward_func(env, state, action, next_state, done):
     goal_positions = list(env.current_goals.keys())
     if not goal_positions:
-        return 10.0  # all goals reached
+        return 3000.0
+    # all goals reached needs a big reward or its just going to
+    # abuse distance rewards when theres multiple goals
 
-    # Distance to the closest goal before and after
-    prev_dist = min(np.linalg.norm(np.array(state[1:]) - np.array(g)) for g in goal_positions)
-    next_dist = min(np.linalg.norm(np.array(next_state[1:]) - np.array(g)) for g in goal_positions)
+    # same as before except now the agent no longer receives access to its own position
+    # so the reward is based on env
+    progress_reward = env.progress_to_goal
 
-    progress_reward = prev_dist - next_dist
-    return progress_reward - 0.1
+    collisions_this_step = next_state[AgentState.COLLISION_COUNT_INDEX] - state[AgentState.COLLISION_COUNT_INDEX]
+    goals_reached_this_step = next_state[AgentState.GOALS_REACHED_INDEX] - state[AgentState.GOALS_REACHED_INDEX]
+
+    # sensing_reward = 0.0
+    # if abs(next_state[AgentState.FRONT_SENSOR_TYPE_INDEX] - AgentState.SENSOR_TYPE_GOAL_VALUE) <= 0.01:
+    #     sensing_reward = 0.1  # reward for sensing a goal
+
+    return -0.5 + goals_reached_this_step * 30.0 \
+           - collisions_this_step + progress_reward
 
     
 def main(args):
