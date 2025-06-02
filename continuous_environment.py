@@ -110,7 +110,7 @@ class ContinuousEnvironment:
         # number of discrete actions, e.g. 8 for 8 directions (N, NE, E, SE, S, SW, W, NW)
         # note for some other RL algorithms we might want a continuous action space instead
         # but for deep Q-learning we can use discrete actions
-        self.action_space_size = 8
+        self.action_space_size = 4
 
         # environment size, note that without boundaries the agent can move outside this
         self.extents = extents

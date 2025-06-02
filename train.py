@@ -39,7 +39,7 @@ def main(args):
     if args.agent == "dqn":
         agent = DQNAgent(
             state_dim=AgentState.size(),
-            action_dim=4,
+            action_dim=env.action_space_size,
             hidden_dim=args.hidden_dim,
             buffer_capacity=args.buffer,
             batch_size=args.batch,
