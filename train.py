@@ -62,14 +62,18 @@ def main(args):
         print(f"Error: Unknown agent type {args.agent}")
         sys.exit(1)
 
+    step_idx = 0
     for episode in range(args.num_episodes):
         print(f"\n--- Episode {episode + 1} / {args.num_episodes} ---")
+        print(f"Agent Epsilon: {agent.epsilon:.4f}")
         continuous_state = env.reset()
         if env.use_gui:
             env.gui.reset()
         done = False
 
         for env_step_idx in range(max_steps_per_episode):
+            step_idx += 1
+            # better use this to track steps instead of env_step_idx for low stepcount episodes
             action = agent.select_action(continuous_state)
             try:
                 next_state, done = env.step(action)
@@ -86,7 +90,7 @@ def main(args):
             if loss is not None:
                 print(f"Step {env_step_idx + 1}: Reward = {reward:.3f}, Loss = {loss:.4f}" if loss else "")
             agent.update_epsilon()
-            if env_step_idx % 50 == 0:
+            if step_idx % 50 == 0:
                 agent.update_target_network()
 
             continuous_state = next_state
