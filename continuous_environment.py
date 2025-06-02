@@ -214,6 +214,7 @@ class ContinuousEnvironment:
         for _ in range(timesteps):
             # step the physics simulation
             self.space.step(dt)
+            self.world_stats["total_time"] += dt
         if self.use_gui:
             self.gui.render(self)
 
