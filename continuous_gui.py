@@ -231,7 +231,18 @@ class ContinuousGUI:
                 points = [(int(v.x + B.x), int(v.y + B.y)) for v in obstacle_shape.get_vertices()]
                 pygame.draw.polygon(background, self.COLOR_OBSTACLE, points)
 
+        sensor_distance = env.agent_state.front_sensor_distance
+        sensor_type = env.agent_state.front_sensor_type
 
+        sensor_end = (
+            int(agent_pos.x + np.cos(env.agent_body.angle) * sensor_distance),
+            int(agent_pos.y + np.sin(env.agent_body.angle) * sensor_distance)
+        )
+        pygame.draw.line(background, (255, 0, 0), (int(agent_pos.x), int(agent_pos.y)), sensor_end, 2)
+        font = pygame.font.SysFont("Arial", 14)
+        sensor_text = f"Sensor: {sensor_distance:.1f} px | Type: {sensor_type}"
+        text_surface = font.render(sensor_text, True, (0, 0, 0))
+        background.blit(text_surface, (10, self.window.get_height() - 20))
 
         pause_rect, step_rect = self._draw_info(background)
 
