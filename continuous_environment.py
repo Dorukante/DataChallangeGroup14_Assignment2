@@ -17,7 +17,7 @@ class AgentState:
         self.goals_reached = 0  # number of goals reached, can be used for reward shaping
 
     @staticmethod
-    def size(self):
+    def size():
         """Returns the size of the state vector. Static method because likely the agents will
         initialize independently of the environment."""
         return 3  # modify this if you add more state variables
@@ -138,6 +138,17 @@ class ContinuousEnvironment:
             size = tuple(obs_data["size"])
             self.add_obstacle(pos, size)
 
+    @staticmethod
+    def action_to_direction(action: int) -> Tuple[int, int]:
+        """Maps a discrete action index to a 2D direction vector (Down, Up, Left, Right)."""
+        directions = {
+            0: (0, 1),   # Down
+            1: (0, -1),  # Up
+            2: (-1, 0),  # Left
+            3: (1, 0),   # Right
+        }
+        return directions[action]
+
     @classmethod
     def load_from_file(cls, file_path: str, use_gui: bool = True) -> 'ContinuousEnvironment':
         """Loads environment configuration from a JSON file."""
@@ -196,24 +207,9 @@ class ContinuousEnvironment:
         simulation will not be stable.
         """
 
-        if agent_action == 0:  # North
-            self.set_agent_velocity(0, self.AGENT_SPEED)
-        elif agent_action == 1:  # North-East
-            self.set_agent_velocity(self.AGENT_SPEED / np.sqrt(2), self.AGENT_SPEED / np.sqrt(2))
-        elif agent_action == 2:  # East
-            self.set_agent_velocity(self.AGENT_SPEED, 0)
-        elif agent_action == 3:  # South-East
-            self.set_agent_velocity(self.AGENT_SPEED / np.sqrt(2), -self.AGENT_SPEED / np.sqrt(2))
-        elif agent_action == 4:  # South
-            self.set_agent_velocity(0, -self.AGENT_SPEED)
-        elif agent_action == 5:  # South-West
-            self.set_agent_velocity(-self.AGENT_SPEED / np.sqrt(2), -self.AGENT_SPEED / np.sqrt(2))
-        elif agent_action == 6:  # West
-            self.set_agent_velocity(-self.AGENT_SPEED, 0)
-        elif agent_action == 7:  # North-West
-            self.set_agent_velocity(-self.AGENT_SPEED / np.sqrt(2), self.AGENT_SPEED / np.sqrt(2))
-        else:
-            raise ValueError("Invalid action")
+        dx, dy = self.action_to_direction(agent_action)
+        speed = self.AGENT_SPEED
+        self.set_agent_velocity(dx * speed, dy * speed)
 
         for _ in range(timesteps):
             # step the physics simulation

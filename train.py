@@ -1,32 +1,54 @@
-from continuous_environment import ContinuousEnvironment
+from continuous_environment import ContinuousEnvironment, AgentState
 import argparse
 import sys
+import numpy as np
+from typing import Tuple, List, Any, Optional
 
 try:
-    from agents.random_agent import RandomAgent
+    from agents.dqn import DQNAgent
 except ImportError:
     print("Warning: RandomAgent not found. Exiting...")
     sys.exit(1)
 
+def reward_func(env, state, action, next_state, done):
+    goal_positions = list(env.current_goals.keys())
+    if not goal_positions:
+        return 10.0  # all goals reached
+
+    # Distance to the closest goal before and after
+    prev_dist = min(np.linalg.norm(np.array(state[1:]) - np.array(g)) for g in goal_positions)
+    next_dist = min(np.linalg.norm(np.array(next_state[1:]) - np.array(g)) for g in goal_positions)
+
+    progress_reward = prev_dist - next_dist
+    return progress_reward - 0.1
+
+    
 def main(args):
-    """Main function to run the environment simulation."""
     max_steps_per_episode = args.max_steps
 
-    # Load environment from file
     try:
         env = ContinuousEnvironment.load_from_file(args.level_file, use_gui=args.use_gui)
         print(f"Environment loaded successfully from {args.level_file}.json")
     except FileNotFoundError:
-        print(f"Error: {args.level_file}.json not found. Please ensure the file exists.")
+        print(f"Error: {args.level_file}.json not found.")
         sys.exit(1)
     except Exception as e:
-        print(f"Error loading environment from {args.level_file}.json: {e}")
+        print(f"Error loading environment: {e}")
         sys.exit(1)
 
-    if args.agent == "random":
-        agent = RandomAgent(action_space_size=env.action_space_size)
-    elif args.agent == "dqn":
-        raise NotImplementedError("DQN agent not implemented yet")
+    if args.agent == "dqn":
+        agent = DQNAgent(
+            state_dim=AgentState.size(),
+            action_dim=4,
+            hidden_dim=args.hidden_dim,
+            buffer_capacity=args.buffer,
+            batch_size=args.batch,
+            gamma=args.gamma,
+            lr=args.lr,
+            epsilon_start=args.epsilon_start,
+            epsilon_end=args.epsilon_end,
+            epsilon_decay=args.epsilon_decay
+        )
     else:
         print(f"Error: Unknown agent type {args.agent}")
         sys.exit(1)
@@ -36,33 +58,45 @@ def main(args):
         continuous_state = env.reset()
         if env.use_gui:
             env.gui.reset()
-        print("Initial state:", continuous_state)
         done = False
+
         for env_step_idx in range(max_steps_per_episode):
-            action = agent.take_action(continuous_state)
+            action = agent.select_action(continuous_state)
             try:
-                continuous_state, done = env.step(action)
+                next_state, done = env.step(action)
             except Exception as e:
                 print(f"Error during env.step(): {e}")
                 if env.use_gui:
                     env.gui.close()
                 sys.exit(1)
-                
+
+            reward = reward_func(env, continuous_state, action, next_state, done)
+
+            agent.store_experience(continuous_state, action, reward, next_state, done)
+            loss = agent.learn()
+            if loss is not None:
+                print(f"Step {env_step_idx + 1}: Reward = {reward:.3f}, Loss = {loss:.4f}" if loss else "")
+            agent.update_epsilon()
+            if env_step_idx % 50 == 0:
+                agent.update_target_network()
+
+            continuous_state = next_state
+
             if done:
                 break
-        
+
         if done:
             print(f"Episode finished after {env_step_idx + 1} steps.")
         else:
-            print(f"Episode reached max steps ({max_steps_per_episode}) or ended without explicit termination signal.")
+            print(f"Episode reached max steps ({max_steps_per_episode}).")
         print("Final state:", continuous_state)
-        total_time_simulated = env.world_stats["total_time"]
-        print(f"Time simulated: {total_time_simulated:.2f} of physics time in seconds.")
+        print(f"Time simulated: {env.world_stats['total_time']:.2f} seconds")
         print(f"Goals remaining: {len(env.current_goals)}")
 
     if env.use_gui:
         env.gui.close()
     print("\nSimulation finished.")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run a continuous environment simulation.")
@@ -74,8 +108,18 @@ if __name__ == "__main__":
                         help="Maximum steps per episode. Default: 1000")
     parser.add_argument("--use-gui", action="store_true",
                         help="Run the simulation with the GUI.")
-    parser.add_argument("--agent", type=str, default="random", choices=["random", "dqn"],
+    parser.add_argument("--agent", type=str, default="dqn", choices=["dqn"],
                         help="Type of agent to use. Default: random")
+    parser.add_argument("--gamma", type=float, default=0.99, help="Discount factor gamma.")
+    parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate")
+    parser.add_argument("--buffer", type=int, default=10000, help="Maximum capacity of the replay buffer")
+    parser.add_argument("--batch", type=int, default=64, help="Batch size for learning")
+    parser.add_argument("--epsilon_start", type=float, default=1.0, help="Initial value for epsilon")
+    parser.add_argument("--epsilon_end", type=float, default=0.01, help="Minimum value for epsilon")
+    parser.add_argument("--epsilon_decay", type=float, default=0.995, help=" Decay rate for epsilon")
+    parser.add_argument("--state_dim", type=int, default=0.995, help="  Dimensionality of the state space.")
+    parser.add_argument("--hidden_dim", type=int, default=128, help=" Number of units in hidden layers of the DQN")
+    
 
     args = parser.parse_args()
     main(args)

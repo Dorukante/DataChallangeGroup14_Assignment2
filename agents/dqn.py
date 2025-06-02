@@ -5,8 +5,7 @@ This module provides the components for building and training a DQN agent,
 including the Q-network model, a replay buffer, and the agent class itself.
 
 1) TODO IMPROVE THE MODEL
-2) TODO suitable Reward Function. For now I will make a very somple one
-3) TODO improve the selection method
+2) TODO improve the selection method
 """
 
 #for dqn
@@ -17,33 +16,8 @@ import torch.optim as optim
 #for buffer
 from collections import deque
 import random
-import numpy as np
-from typing import Tuple, List, Any, Optional
+from typing import Tuple, Any, Optional
 
-#discrete action space (we already have this)
-def action_to_direction(action: int) -> Tuple[int, int]:
-    """Maps a discrete action index to a 2D direction vector.
-
-    Args:
-        action (int): The action index (0: Down, 1: Up, 2: Left, 3: Right).
-
-    Returns:
-        Tuple[int, int]: A tuple (dx, dy) representing the change in coordinates.
-    """
-    directions = {
-        0: (0, 1),   # Down
-        1: (0, -1),  # Up
-        2: (-1, 0),  # Left
-        3: (1, 0),   # Right
-    }
-    return directions[action]
-
-def reward_func(state: Any, action: int, next_state: Any, done: bool) -> float:
-    # Very basic reward shaping: encourage forward movement
-    if done:
-        return -10.0
-    else:
-        return 1.0  # Placeholder: tune based on your environment's goal
 
 # ----- DQN Model -----
 class DQN(nn.Module):
