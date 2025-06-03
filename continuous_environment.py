@@ -401,7 +401,8 @@ class ContinuousEnvironment:
         agent_path = [initial_position]
 
         for step in trange(max_steps, desc="Evaluating agent"):
-            action = agent.select_action(state)
+            #disable exploration
+            action = agent.select_action(state, greedy=True)
 
             if action not in [0, 1, 2, 3]:
                 print(f"Invalid action {action} at step {step}. Aborting evaluation.")
