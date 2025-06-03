@@ -75,6 +75,8 @@ def main(args):
             step_idx += 1
             # better use this to track steps instead of env_step_idx for low stepcount episodes
             action = agent.select_action(continuous_state)
+            if action not in [0,1,2,3]:
+                break
             try:
                 next_state, done = env.step(action)
             except Exception as e:
@@ -88,7 +90,7 @@ def main(args):
             agent.store_experience(continuous_state, action, reward, next_state, done)
             loss = agent.learn()
             if loss is not None:
-                print(f"Step {env_step_idx + 1}: Reward = {reward:.3f}, Loss = {loss:.4f}" if loss else "")
+                print(f"Step {env_step_idx + 1}: Reward = {reward:.3f}, Action = {action}, Loss = {loss:.4f}" if loss else "")
             agent.update_epsilon()
             if step_idx % 50 == 0:
                 agent.update_target_network()
