@@ -5,6 +5,11 @@ import pymunk
 from typing import Tuple, TypeAlias, List, Dict
 from continuous_gui import ContinuousGUI
 import json
+from agents.dqn import DQNAgent
+from tqdm import trange
+from pathlib import Path
+from warnings import warn
+from datetime import datetime
 
 Vector2: TypeAlias = Tuple[float, float]
 
@@ -366,3 +371,89 @@ class ContinuousEnvironment:
         return {
             "total_time": 0,
         }
+    def evaluate_agent(self,
+                       agent: DQNAgent,
+                       max_steps: int = 1000,
+                       show_images: bool = False,
+                       agent_start_pos: tuple[int, int] = None,
+                       random_seed: int | float | str | bytes | bytearray = 0,
+                       file_prefix: str = "evaluation"):
+        """
+        Evaluates a trained DQN agent in the environment.
+
+        Args:
+            agent (DQNAgent): Trained agent.
+            max_steps (int): Max steps per episode.
+            show_images (bool): Whether to display final path image.
+            agent_start_pos (tuple[int, int]): Optional start position for agent.
+            random_seed (int | float | str | bytes | bytearray): Random seed for reproducibility.
+            file_prefix (str): Prefix for result filenames.
+        """
+        np.random.seed(random_seed)
+
+        if agent_start_pos is not None:
+            self.start = agent_start_pos
+
+        goals_reached = 0
+
+        state = self.reset()
+        initial_position = self.agent_body.position
+        agent_path = [initial_position]
+
+        for step in trange(max_steps, desc="Evaluating agent"):
+            action = agent.select_action(state)
+
+            if action not in [0, 1, 2, 3]:
+                print(f"Invalid action {action} at step {step}. Aborting evaluation.")
+                break
+
+            try:
+                next_state, done = self.step(action)
+            except Exception as e:
+                print(f"Error during env.step(): {e}")
+                break
+
+            agent_path.append(self.agent_body.position)
+            goals_reached = next_state[AgentState.GOALS_REACHED_INDEX]  # goals_reached
+            rotation = next_state[AgentState.ROTATION_INDEX]  # rotation
+            front_sensor_distance = next_state[AgentState.FRONT_SENSOR_DISTANCE_INDEX]  # front_sensor_distance
+            front_sensor_type = next_state[AgentState.FRONT_SENSOR_TYPE_INDEX]  # front_sensor_type
+            collision_count = next_state[AgentState.COLLISION_COUNT_INDEX]  # collision_count
+
+            state = next_state
+
+            if done or len(self.current_goals) == 0:
+                break
+
+        self.world_stats["goals_remaining"] = len(self.current_goals)
+        self.world_stats["goals_reached"] = goals_reached
+        self.world_stats["rotation"] = rotation
+        self.world_stats["front_sensor_distance"] = front_sensor_distance
+        self.world_stats["front_sensor_type"] = front_sensor_type
+        self.world_stats["collision_count"] = collision_count
+
+        file_name = f"{file_prefix}__" + datetime.now().strftime("%Y-%m-%d__%H-%M-%S")
+
+        save_results(file_name, self.world_stats, None, show_images)
+
+def save_results(file_name, world_stats, path_image, show_images):
+    out_dir = Path("results/")
+    if not out_dir.exists():
+        warn("Evaluation output directory does not exist. Creating the "
+             "directory.")
+        out_dir.mkdir(parents=True, exist_ok=True)
+
+    # Print evaluation results
+    print("Evaluation complete. Results:")
+    # Text file
+    out_fp = out_dir / f"{file_name}.txt"
+    with open(out_fp, "w") as f:
+        for key, value in world_stats.items():
+            f.write(f"{key}: {value}\n")
+            print(f"{key}: {value}")
+    
+    # Image file
+    out_fp = out_dir / f"{file_name}.png"
+    path_image.save(out_fp)
+    if show_images:
+        path_image.show(f"Path Frequency")
