@@ -16,6 +16,7 @@ import torch.optim as optim
 #for buffer
 from collections import deque
 import random
+import numpy as np
 from typing import Tuple, Any, Optional
 
 
@@ -79,11 +80,11 @@ class Buffer:
         s, a, r, s_next, done = zip(*batch)
 
         return (
-            torch.FloatTensor(s),
+            torch.FloatTensor(np.array(s)),
             torch.LongTensor(a),
-            torch.FloatTensor(r),
-            torch.FloatTensor(s_next),
-            torch.FloatTensor(done)
+            torch.FloatTensor(np.array(r)),
+            torch.FloatTensor(np.array(s_next)),
+            torch.FloatTensor(np.array(done))
         )
 
     def __len__(self) -> int:
