@@ -4,6 +4,7 @@ import copy
 import pymunk
 from typing import Tuple, TypeAlias, List, Dict
 from continuous_gui import ContinuousGUI
+from collections import deque
 import json
 
 Vector2: TypeAlias = Tuple[float, float]
@@ -24,40 +25,57 @@ class AgentState:
     SENSOR_TYPE_OTHER_AGENT_VALUE: float = -10.0
     SENSOR_TYPE_COLLISION_VALUE: float = -100.0
 
-    def __init__(self):
-        self.position: Vector2 = (0.0, 0.0)  # position in the environment
-        self.rotation = 0.0  # rotation in radians
-        self.goals_reached = 0  # number of goals reached, can be used for reward shaping
-        # remove depending on what we train for
+    ACTIONS_TO_REMEMBER: int = 5
 
+    COLLISION_VALUE_ON_COLLISION: float = 100.0
+    COLLISION_VALUE_DECAY: float = 0.5
+
+    def __init__(self):
+        # rotation in radians
+        self.rotation = 0.0
+
+        # whether the agent just found a goal
+        self.just_found_goal = False
+
+        # indicates how far the thing we are sensing is
         self.front_sensor_distance = 0
 
-        self.front_sensor_type = AgentState.SENSOR_TYPE_NONE_VALUE  # see SENSOR_TYPE_* constants
+        # indicates what is being sensed see SENSOR_TYPE_* constants
+        self.front_sensor_type = AgentState.SENSOR_TYPE_NONE_VALUE
 
-        self.collision_count = 0  # number of collisions with obstacles, can be used for reward shaping
+        # value that is set to a maximum on collision then quickly decays
+        self.collision_value = 0
+
+        # small deque to remember the last few actions taken by the agent
+        # helps prevent loops to some degree but really needs a better solution
+        # that allows for longer memory
+        self.past_actions: deque[float] = deque([0.0] * AgentState.ACTIONS_TO_REMEMBER,
+                                                maxlen=AgentState.ACTIONS_TO_REMEMBER)
 
     @staticmethod
-    def size():
-        """Returns the size of the state vector. Static method because likely the agents will
-        initialize independently of the environment."""
-        return 5  # modify this if you add more state variables
+    def size() -> int:
+        """Returns the size of the state vector. Static method because the agents will
+        initialize independently of the environment.
+        modify this if you add more state variables"""
+        return 6 + AgentState.ACTIONS_TO_REMEMBER
 
-    GOALS_REACHED_INDEX = 0
-    ROTATION_INDEX = 1
-    FRONT_SENSOR_DISTANCE_INDEX = 2
-    FRONT_SENSOR_TYPE_INDEX = 3
-    COLLISION_COUNT_INDEX = 4
+    JUST_FOUND_GOAL = 0
+    ROTATION_INDEX_COS = 1
+    ROTATION_INDEX_SIN = 2
+    FRONT_SENSOR_DISTANCE_INDEX = 3
+    FRONT_SENSOR_TYPE_INDEX = 4
+    COLLISION_VALUE_INDEX = 5
 
     def to_numpy(self) -> np.ndarray:
         """Convert the agent state to a numpy array. Most RL algorithms probably prefer this"""
         return np.array([
-            self.goals_reached,
-            # self.position[0], force it to rely on its sensors
-            # self.position[1],
-            self.rotation,
+            self.just_found_goal,
+            np.cos(self.rotation),
+            np.sin(self.rotation),
             self.front_sensor_distance,
             self.front_sensor_type,
-            self.collision_count
+            self.collision_value,
+            *self.past_actions
         ], dtype=np.float32)
 
 
@@ -176,7 +194,8 @@ class ContinuousEnvironment:
             self.add_obstacle(pos, size)
 
         # things needed for the reward
-        self.agent_collided_with_obstacle_count = 0  # initialize counter
+        self.agent_collided_with_obstacle_count_before = 0  # initialize counter
+        self.agent_collided_with_obstacle_count_after = 0
 
         self.goal_shapes_to_goals: Dict[pymunk.Shape, Goal] = {}  # maps pymunk shapes to Goal objects
         self.current_goals: Dict[Vector2, Goal] = {}  # current goals in the environment, maps position physical object
@@ -218,7 +237,8 @@ class ContinuousEnvironment:
         )
 
     def _on_agent_obstacle_collision(self, arbiter, space, data) -> None:
-        self.agent_collided_with_obstacle_count += 1
+        self.agent_collided_with_obstacle_count_after += 1
+        self.agent_state.collision_value = AgentState.COLLISION_VALUE_ON_COLLISION
         #print(f"Agent collided with an obstacle. Total collisions: {self.agent_collided_with_obstacle_count}")
 
     def _on_agent_goal_collision(self, arbiter, space, data) -> None:
@@ -234,9 +254,7 @@ class ContinuousEnvironment:
         del self.current_goals[goal_obj.start_position]
         del self.goal_shapes_to_goals[goal_shape]
 
-        self.agent_state.goals_reached += 1
-
-        #print(f"Goal reached at position {goal_obj.body.position}. Total goals reached: {self.agent_state.goals_reached}")
+        self.agent_state.just_found_goal = True
 
     def add_obstacle(self, position: Vector2, size: Vector2):
         """Add a static rectangular obstacle."""
@@ -257,7 +275,8 @@ class ContinuousEnvironment:
         dt: time step in seconds, default is 1/30th of a second (30 FPS) this must be constant and small or the
         simulation will not be stable.
         """
-
+        # handle agent state updating before the action is applied
+        self.agent_state.just_found_goal = False
 
         dx: float = 0
         dy: float = 0
@@ -278,13 +297,20 @@ class ContinuousEnvironment:
             dy = -np.sin(self.agent_body.angle)
             speed *= 0.2  # move backward is slower
 
-        self.set_agent_velocity(dx * speed, dy * speed)
-
+        # --- PRE SIMULATION UPDATES ---
+        self.agent_collided_with_obstacle_count_before = self.agent_collided_with_obstacle_count_after
         self.dist_closest_goal_before = self.dist_closest_goal_after
+        self.agent_state.collision_value *= AgentState.COLLISION_VALUE_DECAY
+
+        self.set_agent_velocity(dx * speed, dy * speed)
+        # do the simulation
         for _ in range(time_steps):
             # step the physics simulation
             self.space.step(dt)
             self.world_stats["total_time"] += dt
+
+        # --- POST SIMULATION UPDATES ---
+
         if len(self.current_goals) == 0:
             self.progress_to_goal = 0.0
         else:
@@ -302,7 +328,9 @@ class ContinuousEnvironment:
         # update things that changed here
         self.agent_state.position = self.agent_body.position
         self.agent_state.rotation = self.agent_body.angle
-        self.agent_state.collision_count = self.agent_collided_with_obstacle_count
+
+        # update the memory of the agent state
+        self.agent_state.past_actions.append(float(agent_action))
 
         # do the sensor raycast for the front sensor and update the agent state
         front_sensor_end = (
@@ -331,7 +359,6 @@ class ContinuousEnvironment:
                 raise ValueError(f"Unknown collision type: {sensed_object.shape.collision_type}")
 
         is_terminal: bool = (len(self.current_goals) == 0)
-
         return self.get_agent_state(), is_terminal
 
     def set_agent_velocity(self, vx: float, vy: float):
