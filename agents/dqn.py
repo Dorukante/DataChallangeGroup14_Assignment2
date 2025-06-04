@@ -137,7 +137,7 @@ class DQNAgent:
         self.optimizer = optim.Adam(self.q_network.parameters(), lr=lr)
         self.buffer = Buffer(buffer_capacity)
 
-    def select_action(self, state: Any) -> int:
+    def select_action(self, state: Any, greedy: bool = False) -> int:
         """Selects an action using an epsilon-greedy policy.
 
         With probability epsilon, a random action is chosen (exploration).
@@ -149,7 +149,7 @@ class DQNAgent:
         Returns:
             int: The selected action index.
         """
-        if random.random() < self.epsilon:
+        if not greedy and random.random() < self.epsilon:
             return random.randint(0, self.action_dim - 1)  # Explore
         else:
             with torch.no_grad():

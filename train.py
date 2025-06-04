@@ -3,6 +3,7 @@ import argparse
 import sys
 import numpy as np
 from typing import Tuple, List, Any, Optional
+import ast
 
 try:
     from agents.dqn import DQNAgent
@@ -31,6 +32,7 @@ def reward_func(env, state, action, next_state, done):
     
 def main(args):
     max_steps_per_episode = args.max_steps
+    start_position = ast.literal_eval(args.position)
 
     try:
         env = ContinuousEnvironment.load_from_file(args.level_file, use_gui=args.use_gui)
@@ -86,8 +88,8 @@ def main(args):
 
             agent.store_experience(continuous_state, action, reward, next_state, done)
             loss = agent.learn()
-            if loss is not None:
-                print(f"Step {env_step_idx + 1}: Reward = {reward:.3f}, Action = {action}, Loss = {loss:.4f}" if loss else "")
+            # if loss is not None:
+            #     print(f"Step {env_step_idx + 1}: Reward = {reward:.3f}, Action = {action}, Loss = {loss:.4f}" if loss else "")
             agent.update_epsilon()
             if step_idx % 50 == 0:
                 agent.update_target_network()
@@ -107,7 +109,14 @@ def main(args):
 
     if env.use_gui:
         env.gui.close()
-    print("\nSimulation finished.")
+    print("\nTraining is finished")
+
+    print("\nStarting evaluation...")
+    env.evaluate_agent(agent=agent,
+                       max_steps=max_steps_per_episode,
+                       agent_start_pos=None,
+                       random_seed=42,
+                       file_prefix="post_training_eval")
 
 
 if __name__ == "__main__":
@@ -131,7 +140,9 @@ if __name__ == "__main__":
     parser.add_argument("--epsilon_decay", type=float, default=0.9999, help=" Decay rate for epsilon")
     parser.add_argument("--state_dim", type=int, default=0.995, help="  Dimensionality of the state space.")
     parser.add_argument("--hidden_dim", type=int, default=128, help=" Number of units in hidden layers of the DQN")
+    parser.add_argument("--position", type=str, default="(3,11)", help="Start position of the agent")
 
 
     args = parser.parse_args()
+    start_position = ast.literal_eval(args.position)
     main(args)
