@@ -7,6 +7,8 @@ from pygame import gfxdraw
 import pygame
 import sys
 
+from continuous_environment import *
+
 
 class ContinuousGUI:
     # Colors
@@ -14,6 +16,9 @@ class ContinuousGUI:
     COLOR_AGENT = (0, 255, 0)
     COLOR_OBSTACLE = (200, 0, 0)
     COLOR_GOAL = (0, 0, 255)
+    COLOR_SENSOR = (180, 180, 3)  # Yellowish
+    COLOR_SENSOR_HIT = (255, 3, 3) # Red
+    COLOR_COLLISION_INDICATOR = (128, 0, 128)
 
     INFO_NAME_MAP = [
         ("cumulative_reward", "Cumulative reward:"),
@@ -231,18 +236,42 @@ class ContinuousGUI:
                 points = [(int(v.x + B.x), int(v.y + B.y)) for v in obstacle_shape.get_vertices()]
                 pygame.draw.polygon(background, self.COLOR_OBSTACLE, points)
 
-        sensor_distance = env.agent_state.front_sensor_distance
-        sensor_type = env.agent_state.front_sensor_type
+        for sensor in env.agent_state.sensors:
+            if not sensor.is_active:
+                continue
+            if sensor.name == "RaySensor":
+                if sensor.sensed_object_type != 0.0:
+                    if sensor.sensed_object_type == env.agent_state.SENSOR_TYPE_GOAL_VALUE:
+                        pygame.draw.line(background, self.COLOR_GOAL,
+                                         sensor.sensor_start,
+                                         sensor.sensed_object_position, 2)
+                    else:
+                        pygame.draw.line(background,
+                                         self.COLOR_SENSOR_HIT,
+                                         sensor.sensor_start,
+                                         sensor.sensed_object_position,
+                                         2)
+                    # draw small circle at the detected object
+                    pygame.draw.circle(background, self.COLOR_COLLISION_INDICATOR,
+                                       sensor.sensed_object_position, 5)
 
-        sensor_end = (
-            int(agent_pos.x + np.cos(env.agent_body.angle) * sensor_distance),
-            int(agent_pos.y + np.sin(env.agent_body.angle) * sensor_distance)
-        )
-        pygame.draw.line(background, (255, 0, 0), (int(agent_pos.x), int(agent_pos.y)), sensor_end, 2)
-        font = pygame.font.SysFont("Arial", 14)
-        sensor_text = f"Sensor: {sensor_distance:.1f} px | Type: {sensor_type}"
-        text_surface = font.render(sensor_text, True, (0, 0, 0))
-        background.blit(text_surface, (10, self.window.get_height() - 20))
+                else:
+                    pygame.draw.line(background, self.COLOR_SENSOR,
+                                     sensor.sensor_start,
+                                     sensor.sensor_end, 2)
+            elif sensor.name == "RaySensorNoType":
+                pygame.draw.line(background, (0,0,0),
+                                 sensor.sensor_start,
+                                 sensor.sensed_object_position, 2)
+            else:
+                raise NotImplementedError(f"Sensor type {type(sensor)} not implemented in render method.")
+
+        # draw collision indicator - do this last so we overlay it
+        if env.agent_state.collision_value > 0.01:
+            gfxdraw.filled_circle(background, int(agent_pos.x), int(agent_pos.y),
+                                  int(env.agent_state.collision_value /
+                                      env.agent_state.COLLISION_VALUE_ON_COLLISION * env.AGENT_RADIUS),
+                                  self.COLOR_SENSOR_HIT)
 
         pause_rect, step_rect = self._draw_info(background)
 

@@ -1,4 +1,4 @@
-from continuous_environment import ContinuousEnvironment, AgentState
+from continuous_environment import ContinuousEnvironment, AgentState, AgentSensor, RaySensor, RaySensorNoType
 import argparse
 import sys
 import numpy as np
@@ -22,20 +22,48 @@ def reward_func(env, state, action, next_state, done):
     collisions_this_step = env.agent_collided_with_obstacle_count_after - env.agent_collided_with_obstacle_count_before
     reached_goal = next_state[AgentState.JUST_FOUND_GOAL]
 
-    # sensing_reward = 0.0
-    # if abs(next_state[AgentState.FRONT_SENSOR_TYPE_INDEX] - AgentState.SENSOR_TYPE_GOAL_VALUE) <= 0.01:
-    #     sensing_reward = 0.1  # reward for sensing a goal
-
     return -0.5 + reached_goal * 30.0 \
-           - collisions_this_step + progress_reward \
+           - collisions_this_step + progress_reward * 5 \
 
     
 def main(args):
     max_steps_per_episode = args.max_steps
     start_position = ast.literal_eval(args.position)
 
+    # define what kind of sensors the agent has
+    agent_state: AgentState = AgentState(
+
+        sensors = [
+            # front sensor, these determine distance/type
+            RaySensor(ray_angle=0, ray_length=1000),
+            # semi-front sensors
+            RaySensor(ray_angle=np.pi * (1.0 / 32), ray_length=600,
+                      ray_offset=(0, 16)),
+            RaySensor(ray_angle=np.pi * (-1.0 / 32), ray_length=600,
+                      ray_offset=(0, -16)),
+            RaySensor(ray_angle=np.pi * (1.0/16), ray_length=400,
+                      ray_offset=(0, 16)),
+            RaySensor(ray_angle=np.pi * (-1.0/16), ray_length=400,
+                      ray_offset=(0, -16)),
+            RaySensor(ray_angle=np.pi * (-2.0 / 16), ray_length=300,
+                      ray_offset=(0, -32)),
+            RaySensor(ray_angle=np.pi * (2.0 / 16), ray_length=300,
+                      ray_offset=(0, 32)),
+
+            RaySensor(ray_angle=np.pi / 4, ray_length=100),
+            RaySensor(ray_angle=np.pi / 2, ray_length=100),
+            RaySensor(ray_angle=3 * np.pi / 4, ray_length=100),
+            RaySensor(ray_angle=5 * np.pi / 4, ray_length=100),
+            RaySensor(ray_angle=3 * np.pi / 2, ray_length=100),
+            RaySensor(ray_angle=7 * np.pi / 4, ray_length=100),
+
+            RaySensorNoType(ray_angle=np.pi, ray_length=50), # back sensor
+        ]
+    )
+    print("Agent State space is size: ", agent_state.size())
+
     try:
-        env = ContinuousEnvironment.load_from_file(args.level_file, use_gui=args.use_gui)
+        env = ContinuousEnvironment.load_from_file(args.level_file, agent_state=agent_state, use_gui=args.use_gui)
         print(f"Environment loaded successfully from {args.level_file}.json")
     except FileNotFoundError:
         print(f"Error: {args.level_file}.json not found.")
@@ -46,7 +74,7 @@ def main(args):
 
     if args.agent == "dqn":
         agent = DQNAgent(
-            state_dim=AgentState.size(),
+            state_dim=agent_state.size(),
             action_dim=env.action_space_size,
             hidden_dim=args.hidden_dim,
             buffer_capacity=args.buffer,
@@ -70,6 +98,7 @@ def main(args):
             env.gui.reset()
         done = False
 
+        total_reward = 0.0
         for env_step_idx in range(max_steps_per_episode):
             step_idx += 1
             # better use this to track steps instead of env_step_idx for low stepcount episodes
@@ -85,6 +114,7 @@ def main(args):
                 sys.exit(1)
 
             reward = reward_func(env, continuous_state, action, next_state, done)
+            total_reward += reward
 
             agent.store_experience(continuous_state, action, reward, next_state, done)
             loss = agent.learn()
@@ -103,6 +133,8 @@ def main(args):
             print(f"Episode finished after {env_step_idx + 1} steps.")
         else:
             print(f"Episode reached max steps ({max_steps_per_episode}).")
+        print(f"Total reward for episode {episode + 1}: {total_reward:.2f}")
+        print(f"Average Reward per Step: {total_reward / (env_step_idx + 1):.2f}")
         print("Final state:", continuous_state)
         print(f"Time simulated: {env.world_stats['total_time']:.2f} seconds")
         print(f"Goals remaining: {len(env.current_goals)}")

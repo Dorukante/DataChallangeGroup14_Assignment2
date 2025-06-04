@@ -21,6 +21,89 @@ ACTION_MOVE_FORWARD = 2
 ACTION_MOVE_BACKWARD = 3
 
 
+class AgentSensor:
+    NUMBER_OF_STATE_VALUES: int
+
+    def __init__(self):
+        """Initialize the sensor. This is called when the agent is created."""
+        self.is_active = True
+
+    def update(self, agentbody: pymunk.Body, space: pymunk.Space) -> np.array:
+        """Update the sensor and return the state values it has read."""
+        pass
+
+
+class RaySensor(AgentSensor):
+    NUMBER_OF_STATE_VALUES = 2
+
+    name = "RaySensor"
+
+    def __init__(self, ray_length: float = 250, ray_angle: float = 0.0, ray_offset: Vector2 = (0, 0)):
+        super().__init__()
+        print("Creating new RaySensor with parameters:")
+        print(f"  ray_length: {ray_length}")
+        print(f"  ray_angle: {ray_angle}")
+        print(f"  ray_offset: {ray_offset}")
+
+        self.is_active = True
+
+        self.ray_length = ray_length
+        self.ray_angle = ray_angle
+        self.ray_offset: pymunk.Vec2d = ray_offset  # not implemented
+
+        self.sensed_object_type: float = 0.0
+        self.sensed_object_distance: float = 0.0
+
+        # note this is only for drawing, the agent never receives actual coordinates
+        self.sensed_object_position: pymunk.Vec2 = pymunk.Vec2d(0, 0)
+
+        self.sensor_start: pymunk.Vec2 = pymunk.Vec2d(0, 0)
+        self.sensor_end: pymunk.Vec2 = pymunk.Vec2d(0, 0)
+
+
+    def update(self, agentbody: pymunk.Body, space: pymunk.Space) -> np.array:
+        self.sensor_start = agentbody.position
+        self.sensor_end = (
+            self.sensor_start[0] + np.cos(
+                agentbody.angle + self.ray_angle) * self.ray_length,
+            self.sensor_start[1] + np.sin(
+                agentbody.angle + self.ray_angle) * self.ray_length
+        )
+        sensed_object: pymunk.SegmentQueryInfo = space.segment_query_first(
+            agentbody.position,
+            self.sensor_end,
+            1,
+            pymunk.ShapeFilter(group=1)
+        )
+        if sensed_object is None:
+            self.sensed_object_distance = self.ray_length
+            self.sensed_object_type = 0.0
+            self.sensed_object_position = self.sensor_end
+        else:
+            # print(f"Sensed object at position {sensed_object.point}, type: {sensed_object.shape.collision_type}")
+            self.sensed_object_position = sensed_object.point # only for drawing
+
+            self.sensed_object_distance = sensed_object.point.get_distance(
+                agentbody.position)
+            if sensed_object.shape.collision_type == ContinuousEnvironment.GOAL_COLLISION_TYPE:
+                self.sensed_object_type = AgentState.SENSOR_TYPE_GOAL_VALUE
+            elif sensed_object.shape.collision_type == ContinuousEnvironment.AGENT_COLLISION_TYPE:
+                self.sensed_object_type = AgentState.SENSOR_TYPE_OTHER_AGENT_VALUE
+            elif sensed_object.shape.collision_type == ContinuousEnvironment.OBSTACLE_COLLISION_TYPE:
+                self.sensed_object_type = AgentState.SENSOR_TYPE_COLLISION_VALUE
+            else:
+                raise ValueError(
+                    f"Unknown collision type: {sensed_object.shape.collision_type}")
+        return np.array([self.sensed_object_distance, self.sensed_object_type])
+
+
+class RaySensorNoType(RaySensor):
+    NUMBER_OF_STATE_VALUES = 1
+    name = "RaySensorNoType"
+    def update(self, agentbody: pymunk.Body, space: pymunk.Space) -> np.array:
+        values = super().update(agentbody, space)
+        return np.array([values[0]])  # only return distance, not type
+
 class AgentState:
     """State of the agent in the environment.
     You can modify it to include stuff like sensor readings, like it sensing distance to obstacles in front of it."""
@@ -30,23 +113,17 @@ class AgentState:
     SENSOR_TYPE_OTHER_AGENT_VALUE: float = -10.0
     SENSOR_TYPE_COLLISION_VALUE: float = -100.0
 
-    ACTIONS_TO_REMEMBER: int = 5
+    ACTIONS_TO_REMEMBER: int = 3
 
     COLLISION_VALUE_ON_COLLISION: float = 100.0
     COLLISION_VALUE_DECAY: float = 0.5
 
-    def __init__(self):
+    def __init__(self, sensors: List[AgentSensor] = []):
         # rotation in radians
         self.rotation = 0.0
 
         # whether the agent just found a goal
         self.just_found_goal = False
-
-        # indicates how far the thing we are sensing is
-        self.front_sensor_distance = 0
-
-        # indicates what is being sensed see SENSOR_TYPE_* constants
-        self.front_sensor_type = AgentState.SENSOR_TYPE_NONE_VALUE
 
         # value that is set to a maximum on collision then quickly decays
         self.collision_value = 0
@@ -57,19 +134,37 @@ class AgentState:
         self.past_actions: deque[float] = deque([0.0] * AgentState.ACTIONS_TO_REMEMBER,
                                                 maxlen=AgentState.ACTIONS_TO_REMEMBER)
 
-    @staticmethod
-    def size() -> int:
+        self.sensors = sensors
+        self.total_sensor_values = sum(sensor.NUMBER_OF_STATE_VALUES for sensor in sensors)
+        self.sensor_values = np.zeros(self.total_sensor_values, dtype=float)
+        self.position: pymunk.Vec2 = pymunk.Vec2d(0, 0)
+
+        self.past_sensor_values = np.zeros(self.total_sensor_values, dtype=float)
+
+        self.sensor_time: int = 0
+
+    def update_sensors(self, agent_body: pymunk.Body, space: pymunk.Space = None):
+        self.past_sensor_values *= 0.5
+        self.past_sensor_values += self.sensor_values
+        index: int = 0
+        for sensor in self.sensors:
+            sensor_values = sensor.update(agent_body, space)
+            if len(sensor_values) != sensor.NUMBER_OF_STATE_VALUES:
+                raise ValueError(f"Sensor {sensor} returned {len(sensor_values)} values, expected {sensor.NUMBER_OF_STATE_VALUES}")
+            self.sensor_values[index:index + sensor.NUMBER_OF_STATE_VALUES] = sensor_values
+            index += sensor.NUMBER_OF_STATE_VALUES
+        self.position = agent_body.position  # not given in state for now
+
+    def size(self) -> int:
         """Returns the size of the state vector. Static method because the agents will
         initialize independently of the environment.
         modify this if you add more state variables"""
-        return 6 + AgentState.ACTIONS_TO_REMEMBER
+        return len(self.to_numpy())
 
     JUST_FOUND_GOAL = 0
     ROTATION_INDEX_COS = 1
     ROTATION_INDEX_SIN = 2
-    FRONT_SENSOR_DISTANCE_INDEX = 3
-    FRONT_SENSOR_TYPE_INDEX = 4
-    COLLISION_VALUE_INDEX = 5
+    COLLISION_VALUE_INDEX = 3
 
     def to_numpy(self) -> np.ndarray:
         """Convert the agent state to a numpy array. Most RL algorithms probably prefer this"""
@@ -77,10 +172,12 @@ class AgentState:
             self.just_found_goal,
             np.cos(self.rotation),
             np.sin(self.rotation),
-            self.front_sensor_distance,
-            self.front_sensor_type,
             self.collision_value,
-            *self.past_actions
+            *self.past_actions,
+            *self.sensor_values,
+            # *self.past_sensor_values,
+            self.position.x,
+            self.position.y,
         ], dtype=np.float32)
 
 
@@ -105,7 +202,7 @@ class ContinuousEnvironment:
     GOAL_RADIUS = 16  # radius of the goal circles
     AGENT_RADIUS = 16  # radius of the agent circle
     AGENT_SPEED = 64  # units per second
-    AGENT_TURN_SPEED = np.pi / 10
+    AGENT_TURN_SPEED = np.pi / 6
     AGENT_FRONT_SENSOR_RANGE = 500  # range of the front sensor in pixels
 
     GOAL_COLLISION_TYPE = 1  # collision type for goals
@@ -116,14 +213,14 @@ class ContinuousEnvironment:
     CATEGORY_GOAL = 0b10
     CATEGORY_OBSTACLE = 0b100
 
-    GUI_RENDER_INTERVAL = 2.5  # physics seconds, how often to render the GUI
+    GUI_RENDER_INTERVAL = 0.5  # physics seconds, how often to render the GUI
 
     def reset_goals(self):
         for goal in self.current_goals:
             self.space.remove(self.current_goals[goal].body, self.current_goals[goal].shape)
         self.current_goals.clear()
         self.goal_shapes_to_goals.clear()
-        for goal_start_position in self.goal_positions:
+        for goal_start_position in self.initial_goal_positions:
             body = pymunk.Body(body_type=pymunk.Body.STATIC)
             body.position = goal_start_position
             shape = pymunk.Circle(body, self.GOAL_RADIUS)
@@ -151,16 +248,17 @@ class ContinuousEnvironment:
             mask=self.CATEGORY_AGENT | self.CATEGORY_GOAL | self.CATEGORY_OBSTACLE
         )
         self.space.add(self.agent_body, self.agent_shape)
-        self.agent_state = AgentState()
 
     def __init__(self,
+            agent_initial_state: AgentState,
             goals: list[Vector2],
             start: Vector2,
             extents: Tuple[int, int] = (512, 512),
             additional_obstacles: list[tuple[Vector2, Vector2]] = [],
-            use_gui: bool = True
+            use_gui: bool = True,
         ):
-        self.goal_positions = goals
+        self.agent_state = agent_initial_state
+        self.initial_goal_positions = goals
         self.start = start
 
         self.info = self._reset_info()
@@ -221,7 +319,7 @@ class ContinuousEnvironment:
 
 
     @classmethod
-    def load_from_file(cls, file_path: str, use_gui: bool = True) -> 'ContinuousEnvironment':
+    def load_from_file(cls, file_path: str, agent_state:AgentState, use_gui: bool = True) -> 'ContinuousEnvironment':
         """Loads environment configuration from a JSON file."""
         with open(file_path + '.json', 'r') as f:
             config = json.load(f)
@@ -234,6 +332,7 @@ class ContinuousEnvironment:
             })
 
         return cls(
+            agent_initial_state=agent_state,
             goals=[tuple(g) for g in config["goals"]],
             start=tuple(config["start_position"]),
             extents=tuple(config["extents"]),
@@ -270,7 +369,7 @@ class ContinuousEnvironment:
         self.space.add(body, shape)
         self.obstacles.append((body, shape))
 
-    def step(self, agent_action: int, time_steps: int = 10, dt: float = 1.0 / 30.0):
+    def step(self, agent_action: int, time_steps: int = 5, dt: float = 1.0 / 30.0):
         """Advance the physics simulation by dt seconds.
         If using GUI, update the display. Returns agents new state, and a terminal flag
         (Unlike the given implementation the reward is not returned here)
@@ -338,30 +437,7 @@ class ContinuousEnvironment:
         self.agent_state.past_actions.append(float(agent_action))
 
         # do the sensor raycast for the front sensor and update the agent state
-        front_sensor_end = (
-            self.agent_body.position[0] + np.cos(self.agent_body.angle) * self.AGENT_FRONT_SENSOR_RANGE,
-            self.agent_body.position[1] + np.sin(self.agent_body.angle) * self.AGENT_FRONT_SENSOR_RANGE
-        )
-        sensed_object: pymunk.SegmentQueryInfo = self.space.segment_query_first(
-            self.agent_body.position,
-            front_sensor_end,
-            1,
-            pymunk.ShapeFilter(group=1)
-        )
-        if sensed_object is None:
-            self.agent_state.front_sensor_distance = self.AGENT_FRONT_SENSOR_RANGE
-            self.agent_state.front_sensor_type = 0
-        else:
-            # print(f"Sensed object at position {sensed_object.point}, type: {sensed_object.shape.collision_type}")
-            self.agent_state.front_sensor_distance = sensed_object.point.get_distance(self.agent_body.position)
-            if sensed_object.shape.collision_type == self.GOAL_COLLISION_TYPE:
-                self.agent_state.front_sensor_type = AgentState.SENSOR_TYPE_GOAL_VALUE
-            elif sensed_object.shape.collision_type == self.AGENT_COLLISION_TYPE:
-                self.agent_state.front_sensor_type = AgentState.SENSOR_TYPE_OTHER_AGENT_VALUE
-            elif sensed_object.shape.collision_type == self.OBSTACLE_COLLISION_TYPE:
-                self.agent_state.front_sensor_type = AgentState.SENSOR_TYPE_COLLISION_VALUE
-            else:
-                raise ValueError(f"Unknown collision type: {sensed_object.shape.collision_type}")
+        self.agent_state.update_sensors(self.agent_body, self.space)
 
         is_terminal: bool = (len(self.current_goals) == 0)
         return self.get_agent_state(), is_terminal
@@ -442,11 +518,6 @@ class ContinuousEnvironment:
                 break
 
             agent_path.append(self.agent_body.position)
-            goals_reached = next_state[AgentState.GOALS_REACHED_INDEX]  # goals_reached
-            rotation = next_state[AgentState.ROTATION_INDEX]  # rotation
-            front_sensor_distance = next_state[AgentState.FRONT_SENSOR_DISTANCE_INDEX]  # front_sensor_distance
-            front_sensor_type = next_state[AgentState.FRONT_SENSOR_TYPE_INDEX]  # front_sensor_type
-            collision_count = next_state[AgentState.COLLISION_COUNT_INDEX]  # collision_count
 
             state = next_state
 
@@ -454,17 +525,15 @@ class ContinuousEnvironment:
                 break
 
         self.world_stats["goals_remaining"] = len(self.current_goals)
-        self.world_stats["goals_reached"] = goals_reached
-        self.world_stats["rotation"] = rotation
-        self.world_stats["front_sensor_distance"] = front_sensor_distance
-        self.world_stats["front_sensor_type"] = front_sensor_type
-        self.world_stats["collision_count"] = collision_count
+        self.world_stats["goals_reached"] = len(self.initial_goal_positions) - len(self.current_goals)
+        self.world_stats["collision_count"] =  self.agent_collided_with_obstacle_count_after
 
         file_name = f"{file_prefix}__" + datetime.now().strftime("%Y-%m-%d__%H-%M-%S")
 
-        save_results(file_name, self.world_stats, None, show_images)
+        save_results(file_name, self.world_stats)
 
-def save_results(file_name, world_stats, path_image, show_images):
+
+def save_results(file_name, world_stats):
     out_dir = Path("results/")
     if not out_dir.exists():
         warn("Evaluation output directory does not exist. Creating the "
@@ -479,9 +548,3 @@ def save_results(file_name, world_stats, path_image, show_images):
         for key, value in world_stats.items():
             f.write(f"{key}: {value}\n")
             print(f"{key}: {value}")
-    
-    # Image file
-    out_fp = out_dir / f"{file_name}.png"
-    path_image.save(out_fp)
-    if show_images:
-        path_image.show(f"Path Frequency")
