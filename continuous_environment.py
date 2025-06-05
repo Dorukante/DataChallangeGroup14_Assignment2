@@ -371,7 +371,7 @@ class ContinuousEnvironment:
         self.space.add(body, shape)
         self.obstacles.append((body, shape))
 
-    def step(self, agent_action: int, time_steps: int = 5, dt: float = 1.0 / 30.0):
+    def step(self, agent_action: int, time_steps: int = 15, dt: float = 1.0 / 30.0):
         """Advance the physics simulation by dt seconds.
         If using GUI, update the display. Returns agents new state, and a terminal flag
         (Unlike the given implementation the reward is not returned here)
