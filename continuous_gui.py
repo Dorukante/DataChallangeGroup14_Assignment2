@@ -23,8 +23,9 @@ class ContinuousGUI:
     INFO_NAME_MAP = [
         # ("cumulative_reward", "Cumulative reward:"),
         ("current_collision_count", "Total Collisions:"),
-        ("total_failed_move", "Total failed moves:"),
+        # ("total_failed_move", "Total failed moves:"),
         # ("total_targets_reached", "Total targets reached:"),
+        ("elapsed_physics_time", "Elapsed Simulation Time (s):"),
         ("fps", "FPS:"),
     ]
 
@@ -84,6 +85,7 @@ class ContinuousGUI:
                 "current_collision_count": 0,
                 "fps": "0.0",
                 "total_steps": 0,
+                "elapsed_physics_time": 0.0,
                 "cumulative_reward": 0}
 
     def _initial_render(self):
@@ -184,6 +186,8 @@ class ContinuousGUI:
 
     def render(self, env, reward: float = 0, is_single_step: bool = False):
         """Render the environment.
+        -- note this needs a cleanup as its still largely the given code, and does
+        not yet integrate with the new environment
         """
         info = env.info
 
@@ -197,6 +201,7 @@ class ContinuousGUI:
         self.last_10_fps[self.frame_count] = fps
         self.stats["fps"] = f"{sum(self.last_10_fps) / 10:.1f}"
         self.stats["total_targets_reached"] += int(info["target_reached"])
+        self.stats["elapsed_physics_time"] = env.world_stats["total_time"]
 
         self.stats["current_collision_count"] = env.world_stats["collision_count"]
 
@@ -222,9 +227,6 @@ class ContinuousGUI:
         background.fill((238, 241, 240), self.info_panel_rect)
 
 
-        # draw agent circle
-        agent_pos = env.agent_body.position
-        gfxdraw.filled_circle(background, int(agent_pos.x), int(agent_pos.y), int(env.AGENT_RADIUS), self.COLOR_AGENT)
 
         # draw goals
         for goal_obj in env.current_goals.values():
@@ -268,6 +270,9 @@ class ContinuousGUI:
                                  sensor.sensed_object_position, 2)
             else:
                 raise NotImplementedError(f"Sensor type {type(sensor)} not implemented in render method.")
+        # draw agent circle
+        agent_pos = env.agent_body.position
+        gfxdraw.filled_circle(background, int(agent_pos.x), int(agent_pos.y), int(env.AGENT_RADIUS), self.COLOR_AGENT)
 
         # draw collision indicator - do this last so we overlay it
         if env.agent_state.collision_value > 0.01:
