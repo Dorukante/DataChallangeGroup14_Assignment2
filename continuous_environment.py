@@ -176,10 +176,9 @@ class AgentState:
             *self.past_actions,
             *self.sensor_values,
             # *self.past_sensor_values,
-            self.position.x,
-            self.position.y,
+            # self.position.x,
+            # self.position.y,
         ], dtype=np.float32)
-
 
 
 class Goal:
