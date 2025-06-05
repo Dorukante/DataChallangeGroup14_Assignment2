@@ -246,6 +246,9 @@ class ContinuousEnvironment:
             categories=self.CATEGORY_AGENT,
             mask=self.CATEGORY_AGENT | self.CATEGORY_GOAL | self.CATEGORY_OBSTACLE
         )
+        self.agent_collided_with_obstacle_count_after = 0
+        self.agent_collided_with_obstacle_count_before = 0
+
         self.space.add(self.agent_body, self.agent_shape)
 
     def __init__(self,
@@ -432,6 +435,8 @@ class ContinuousEnvironment:
         self.agent_state.position = self.agent_body.position
         self.agent_state.rotation = self.agent_body.angle
 
+        self.world_stats["collision_count"] = self.agent_collided_with_obstacle_count_after
+
         # update the memory of the agent state
         self.agent_state.past_actions.append(float(agent_action))
 
@@ -472,6 +477,7 @@ class ContinuousEnvironment:
         """Reset the world statistics."""
         return {
             "total_time": 0,
+            "collision_count":0,
         }
     def evaluate_agent(self,
                        agent: DQNAgent,
@@ -525,7 +531,7 @@ class ContinuousEnvironment:
 
         self.world_stats["goals_remaining"] = len(self.current_goals)
         self.world_stats["goals_reached"] = len(self.initial_goal_positions) - len(self.current_goals)
-        self.world_stats["collision_count"] =  self.agent_collided_with_obstacle_count_after
+        self.world_stats["collision_count"] = self.agent_collided_with_obstacle_count_after
 
         file_name = f"{file_prefix}__" + datetime.now().strftime("%Y-%m-%d__%H-%M-%S")
 

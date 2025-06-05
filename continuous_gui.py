@@ -21,8 +21,8 @@ class ContinuousGUI:
     COLOR_COLLISION_INDICATOR = (128, 0, 128)
 
     INFO_NAME_MAP = [
-        ("cumulative_reward", "Cumulative reward:"),
-        ("total_steps", "Total steps:"),
+        # ("cumulative_reward", "Cumulative reward:"),
+        ("current_collision_count", "Total Collisions:"),
         ("total_failed_move", "Total failed moves:"),
         # ("total_targets_reached", "Total targets reached:"),
         ("fps", "FPS:"),
@@ -81,6 +81,7 @@ class ContinuousGUI:
     def _reset_stats():
         return {"total_targets_reached": 0,
                 "total_failed_move": 0,
+                "current_collision_count": 0,
                 "fps": "0.0",
                 "total_steps": 0,
                 "cumulative_reward": 0}
@@ -196,6 +197,8 @@ class ContinuousGUI:
         self.last_10_fps[self.frame_count] = fps
         self.stats["fps"] = f"{sum(self.last_10_fps) / 10:.1f}"
         self.stats["total_targets_reached"] += int(info["target_reached"])
+
+        self.stats["current_collision_count"] = env.world_stats["collision_count"]
 
         if (not self.paused and not self.step) or is_single_step:
             self.stats["total_steps"] += 1
