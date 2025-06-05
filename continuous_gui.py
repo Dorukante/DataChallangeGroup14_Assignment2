@@ -25,7 +25,7 @@ class ContinuousGUI:
         ("current_collision_count", "Total Collisions:"),
         # ("total_failed_move", "Total failed moves:"),
         # ("total_targets_reached", "Total targets reached:"),
-        ("elapsed_physics_time", "Elapsed Simulation Time (s):"),
+        ("elapsed_physics_time", "Simulation Time (s):"),
         ("fps", "FPS:"),
     ]
 
