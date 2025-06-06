@@ -4,6 +4,8 @@ import sys
 import numpy as np
 from typing import Tuple, List, Any, Optional
 import ast
+import json
+import os
 
 try:
     from agents.dqn import DQNAgent
@@ -24,11 +26,14 @@ def reward_func(env, state, action, next_state, done):
 
     return -0.5 + reached_goal * 30.0 \
            - collisions_this_step + progress_reward * 5 \
-
-    
+             
 def main(args):
     max_steps_per_episode = args.max_steps
     start_position = ast.literal_eval(args.position)
+
+    episode_metrics = []
+
+    results_path = os.path.join(os.path.curdir, "results")
 
     # define what kind of sensors the agent has
     agent_state: AgentState = AgentState(
@@ -73,21 +78,28 @@ def main(args):
         sys.exit(1)
 
     if args.agent == "dqn":
-        agent = DQNAgent(
-            state_dim=agent_state.size(),
-            action_dim=env.action_space_size,
-            hidden_dim=args.hidden_dim,
-            buffer_capacity=args.buffer,
-            batch_size=args.batch,
-            gamma=args.gamma,
-            lr=args.lr,
-            epsilon_start=args.epsilon_start,
-            epsilon_end=args.epsilon_end,
-            epsilon_decay=args.epsilon_decay
-        )
+
+        dqn_agent(args, agent_state, env, max_steps_per_episode, start_position, episode_metrics, results_path)
+        
     else:
         print(f"Error: Unknown agent type {args.agent}")
         sys.exit(1)
+
+    
+def dqn_agent(args, agent_state,env, max_steps_per_episode, start_position, episode_metrics, results_path):
+
+    agent = DQNAgent(
+        state_dim=agent_state.size(),
+        action_dim=env.action_space_size,
+        hidden_dim=args.hidden_dim,
+        buffer_capacity=args.buffer,
+        batch_size=args.batch,
+        gamma=args.gamma,
+        lr=args.lr,
+        epsilon_start=args.epsilon_start,
+        epsilon_end=args.epsilon_end,
+        epsilon_decay=args.epsilon_decay
+    )
 
     step_idx = 0
     for episode in range(args.num_episodes):
@@ -97,6 +109,7 @@ def main(args):
         if env.use_gui:
             env.gui.reset()
         done = False
+        td_losses = []
 
         total_reward = 0.0
         for env_step_idx in range(max_steps_per_episode):
@@ -118,8 +131,8 @@ def main(args):
 
             agent.store_experience(continuous_state, action, reward, next_state, done)
             loss = agent.learn()
-            # if loss is not None:
-            #     print(f"Step {env_step_idx + 1}: Reward = {reward:.3f}, Action = {action}, Loss = {loss:.4f}" if loss else "")
+            if loss is not None:
+                td_losses.append(loss)
             agent.update_epsilon()
             if step_idx % 50 == 0:
                 agent.update_target_network()
@@ -133,11 +146,23 @@ def main(args):
             print(f"Episode finished after {env_step_idx + 1} steps.")
         else:
             print(f"Episode reached max steps ({max_steps_per_episode}).")
-        print(f"Total reward for episode {episode + 1}: {total_reward:.2f}")
-        print(f"Average Reward per Step: {total_reward / (env_step_idx + 1):.2f}")
-        print("Final state:", continuous_state)
-        print(f"Time simulated: {env.world_stats['total_time']:.2f} seconds")
-        print(f"Goals remaining: {len(env.current_goals)}")
+        
+        # ---- Log episode metrics ----
+        avg_td_loss = np.mean(td_losses) if td_losses else None
+        episode_metrics.append({
+            "episode": episode + 1,
+            "total_reward": total_reward,
+            "avg_reward_per_step": total_reward / (env_step_idx + 1),
+            "episode_length": env_step_idx + 1,
+            "epsilon": agent.epsilon,
+            "avg_td_loss": avg_td_loss,
+            "total_steps": step_idx,
+        })
+
+        with open(os.path.join(results_path,"training_metrics.json"), "w") as f:
+            json.dump(episode_metrics, f, indent=2)
+
+        print("\nEpisode metrics saved to training_metrics.json")
 
     if env.use_gui:
         env.gui.close()
@@ -149,7 +174,6 @@ def main(args):
                        agent_start_pos=None,
                        random_seed=42,
                        file_prefix="post_training_eval")
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run a continuous environment simulation.")

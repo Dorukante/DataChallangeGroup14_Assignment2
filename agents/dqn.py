@@ -5,7 +5,7 @@ This module provides the components for building and training a DQN agent,
 including the Q-network model, a replay buffer, and the agent class itself.
 
 1) TODO IMPROVE THE MODEL
-2) TODO improve the selection method
+2) TODO DEFINE RL METRICS THAT ARE SUITABLE FOR EVALUATION
 """
 
 #for dqn
