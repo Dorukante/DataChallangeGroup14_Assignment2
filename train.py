@@ -16,7 +16,7 @@ except ImportError:
 def reward_func(env, state, action, next_state, done):
     goal_positions = list(env.current_goals.keys())
     if not goal_positions:
-        return 100.0
+        return 10000.0
     # all goals reached needs a big reward or its just going to
     # abuse distance rewards when theres multiple goals
 
@@ -188,7 +188,6 @@ def dqn_agent(agent, args, env, max_steps_per_episode, start_position, episode_m
             loss = agent.learn()
             if loss is not None:
                 td_losses.append(loss)
-            agent.update_epsilon()
             if step_idx % 50 == 0:
                 agent.update_target_network()
 
@@ -197,6 +196,7 @@ def dqn_agent(agent, args, env, max_steps_per_episode, start_position, episode_m
             if done:
                 break
 
+        agent.update_epsilon()
         if done:
             print(f"Episode finished after {env_step_idx + 1} steps.")
         else:
@@ -215,7 +215,7 @@ def dqn_agent(agent, args, env, max_steps_per_episode, start_position, episode_m
         with open(results_path, "w") as f:
             json.dump(episode_metrics, f, indent=2)
         print("\nEpisode metrics saved to training_metrics.json")
-
+    
     if env.use_gui:
         env.gui.close()
     print("\nTraining is finished")
@@ -310,11 +310,11 @@ def ppo_agent(agent, args, env, max_steps_per_episode, start_position, episode_m
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run a continuous environment simulation.")
-    parser.add_argument("-l", "--level_file", type=str, default="level_1",
+    parser.add_argument("--level_file", type=str, default="level_1",
                         help="Name of the level JSON file (without .json extension) to load. Default: level_1")
-    parser.add_argument("-e", "--num_episodes", type=int, default=50,
+    parser.add_argument("--num_episodes", type=int, default=50,
                         help="Number of episodes to run. Default: 50")
-    parser.add_argument("-s", "--max_steps", type=int, default=1000,
+    parser.add_argument("--max_steps", type=int, default=1000,
                         help="Maximum steps per episode. Default: 1000")
     parser.add_argument("--use-gui", action="store_true",
                         help="Run the simulation with the GUI.")
@@ -326,7 +326,7 @@ if __name__ == "__main__":
     parser.add_argument("--batch", type=int, default=64, help="Batch size for learning")
     parser.add_argument("--epsilon_start", type=float, default=1.0, help="Initial value for epsilon")
     parser.add_argument("--epsilon_end", type=float, default=0.01, help="Minimum value for epsilon")
-    parser.add_argument("--epsilon_decay", type=float, default=0.9999, help=" Decay rate for epsilon")
+    parser.add_argument("--epsilon_decay", type=float, default=0.95, help=" Decay rate for epsilon")
     parser.add_argument("--state_dim", type=int, default=0.995, help="  Dimensionality of the state space.")
     parser.add_argument("--hidden_dim", type=int, default=128, help=" Number of units in hidden layers of the DQN")
     parser.add_argument("--position", type=str, default="(3,11)", help="Start position of the agent")
