@@ -16,7 +16,7 @@ except ImportError:
 def reward_func(env, state, action, next_state, done):
     goal_positions = list(env.current_goals.keys())
     if not goal_positions:
-        return 10000.0
+        return 100.0
     # all goals reached needs a big reward or its just going to
     # abuse distance rewards when theres multiple goals
 
@@ -26,6 +26,7 @@ def reward_func(env, state, action, next_state, done):
 
     return -0.5 + reached_goal * 30.0 \
            - collisions_this_step + progress_reward * 5 \
+
 
 def format_args_summary(agent_type: str, args) -> str:
     if agent_type == "dqn":
@@ -225,7 +226,7 @@ def dqn_agent(agent, args, env, max_steps_per_episode, start_position, episode_m
                        max_steps=max_steps_per_episode,
                        agent_start_pos=None,
                        random_seed=42,
-                       file_prefix="post_training_eval")
+                       file_prefix="post_training_eval_dqn")
 
 def ppo_agent(agent, args, env, max_steps_per_episode, start_position, episode_metrics, results_path):
 
@@ -305,7 +306,7 @@ def ppo_agent(agent, args, env, max_steps_per_episode, start_position, episode_m
         max_steps=max_steps_per_episode,
         agent_start_pos=None,
         random_seed=42,
-        file_prefix="post_training_eval"
+        file_prefix="post_training_eval_ppo"
     )
 
 if __name__ == "__main__":
@@ -330,8 +331,8 @@ if __name__ == "__main__":
     parser.add_argument("--state_dim", type=int, default=0.995, help="  Dimensionality of the state space.")
     parser.add_argument("--hidden_dim", type=int, default=128, help=" Number of units in hidden layers of the DQN")
     parser.add_argument("--position", type=str, default="(3,11)", help="Start position of the agent")
-    parser.add_argument("--lamda", type=float, default=0.95, help=" λ for Generalized Advantage Estimation")
-    parser.add_argument("--clip_eps", type=float, default=0.2, help=" PPO Clipping Parameter")
+    parser.add_argument("--lamda", type=float, default=0.9, help=" λ for Generalized Advantage Estimation")
+    parser.add_argument("--clip_eps", type=float, default=0.3, help=" PPO Clipping Parameter")
     parser.add_argument("--ppo_epochs", type=int, default=4, help="Number of PPO Update Epochs per Rollout")
     parser.add_argument("--entropy_coeff", type=float, default=0.01, help="Entropy Coefficient")
 
