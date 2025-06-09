@@ -139,7 +139,6 @@ def main(args):
             state_dim=agent_state.size(),
             action_dim=env.action_space_size,
             hidden_dim=args.hidden_dim,
-            buffer_capacity=args.buffer,
             batch_size=args.batch,
             gamma=args.gamma,
             lr=args.lr,

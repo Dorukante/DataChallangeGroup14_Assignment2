@@ -41,6 +41,7 @@ class PPOTransition(Transition):
     
     @classmethod
     def to_tensors(cls, transitions: List['PPOTransition'], device: torch.device) -> Tuple[torch.Tensor, ...]:
+        """Convert batch of transitions to tensors."""
         s, a, r, s_next, done, log_probs, values = zip(*[t.to_tuple() for t in transitions])
         return (
             torch.FloatTensor(np.array(s)).to(device),
@@ -59,9 +60,9 @@ class Buffer:
         device (torch.device): Device to store tensors on
         capacity (int): Maximum number of transitions to store
     """
-    def __init__(self, device: torch.device, capacity: int = 10000):
+    def __init__(self, device: torch.device, capacity: Optional[int]):
         self.device = device
-        self.buffer = deque(maxlen=capacity)
+        self.buffer = deque(maxlen=capacity if capacity != None else None)
     
     def is_empty(self) -> bool:
         """Check if buffer is empty."""
@@ -84,7 +85,7 @@ class Buffer:
         
         Args:
             batch_size (Optional[int]): If provided, randomly sample this many transitions.
-                                      If None, return all transitions.
+                                        If None, return all transitions.
         
         Returns:
             Tuple[torch.Tensor, ...]: Batch of transitions as tensors
@@ -98,8 +99,8 @@ class Buffer:
         else:
             transitions = self.buffer
             
-        # Let the transition type handle the conversion
-        return Transition.to_tensors(transitions, self.device)
+        # Type of first transition is type that handles converting to tensors
+        return transitions[0].to_tensors(transitions, self.device)
 
     def __len__(self) -> int:
         return len(self.buffer)

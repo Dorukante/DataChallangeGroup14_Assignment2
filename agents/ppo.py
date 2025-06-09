@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from agents.dqn import DQNAgent
+from agents.buffer import Buffer, PPOTransition
 import numpy as np
 from typing import List, Tuple, Optional, Dict, Union
 from torch.utils.data import DataLoader, TensorDataset
@@ -57,8 +58,7 @@ class PPOAgent(DQNAgent):
     def __init__(self, 
                  state_dim: int, 
                  action_dim: int, 
-                 hidden_dim: int = 128, 
-                 buffer_capacity: int = 10000, 
+                 hidden_dim: int = 128,
                  batch_size: int = 64, 
                  gamma: float = 0.99, 
                  lr: float = 1e-3, 
@@ -74,7 +74,6 @@ class PPOAgent(DQNAgent):
             state_dim (int): Dimension of the input state.
             action_dim (int): Number of possible actions.
             hidden_dim (int): Size of the hidden layers.
-            buffer_capacity (int): Placeholder for compatibility.
             batch_size (int): Batch size used in training.
             gamma (float): Discount factor.
             lr (float): Learning rate.
@@ -85,7 +84,8 @@ class PPOAgent(DQNAgent):
         """
         super().__init__(
             state_dim=state_dim, action_dim=action_dim, hidden_dim=hidden_dim,
-            buffer_capacity=buffer_capacity, batch_size=batch_size, gamma=gamma, lr=lr,
+            buffer_capacity=None,  # PPO is on-policy, so no capacity limit
+            batch_size=batch_size, gamma=gamma, lr=lr,
             epsilon_start=0.0, epsilon_end=0.0, epsilon_decay=1.0
         )
 
@@ -96,8 +96,6 @@ class PPOAgent(DQNAgent):
         self.clip_epsilon = clip_eps
         self.entropy_coeff = entropy_coeff
         self.epochs = epochs
-
-        self.buffer = []  # On-policy buffer
 
     def select_action(self, state: np.ndarray, greedy: bool = False) -> Union[int, Tuple[int, float, float]]:
         """
@@ -141,9 +139,9 @@ class PPOAgent(DQNAgent):
             log_prob (float): Log probability of the taken action.
             value (float): Estimated state value.
         """
-        self.buffer.append((state, action, reward, next_state, done, log_prob, value))
+        self.buffer.add(PPOTransition(state, action, reward, next_state, done, log_prob, value))
 
-    def compute_gae(self, rewards, values, dones, next_value, gamma=0.99, lam=0.95):
+    def compute_gae(self, rewards, values, dones, next_value):
         """
         Computes Generalized Advantage Estimation (GAE) for trajectory.
         
@@ -152,8 +150,6 @@ class PPOAgent(DQNAgent):
             values (List[float]): Value estimates.
             dones (List[bool]): Done flags.
             next_value (float): Value of final state.
-            gamma (float): Discount factor.
-            lam (float): GAE lambda.
 
         Returns:
             Tuple[List[float], List[float]]: Advantages and target returns.
@@ -162,40 +158,27 @@ class PPOAgent(DQNAgent):
         gae = 0
         values = values + [next_value]
         for t in reversed(range(len(rewards))):
-            delta = rewards[t] + gamma * values[t + 1] * (1 - dones[t]) - values[t]
-            gae = delta + gamma * lam * (1 - dones[t]) * gae
+            delta = rewards[t] + self.gamma * values[t + 1] * (1 - dones[t]) - values[t]
+            gae = delta + self.gamma * self.lam * (1 - dones[t]) * gae
             advantages.insert(0, gae)
         returns = [adv + val for adv, val in zip(advantages, values[:-1])]
         return advantages, returns
 
-    def learn(self):
-        """
-        Performs PPO update using collected trajectories.
-        
-        Returns:
-            dict: A dictionary of average policy loss, value loss, entropy, and total loss.
-        """
-        if not self.buffer:
+    def learn(self) -> Optional[Dict[str, float]]:
+        """Performs PPO update using collected trajectories."""
+        if self.buffer.is_empty():
             return None
 
-        # Unpack and convert buffer
-        states, actions, rewards, next_states, dones, log_probs_old, values = zip(*self.buffer)
-        states = torch.FloatTensor(np.array(states)).to(self.device)
-        actions = torch.LongTensor(actions).to(self.device)
-        rewards = torch.FloatTensor(np.array(rewards)).to(self.device)
-        dones = torch.FloatTensor(np.array(dones)).to(self.device)
-        log_probs_old = torch.FloatTensor(np.array(log_probs_old)).to(self.device)
-        values = torch.FloatTensor(np.array(values)).to(self.device)
+        # Get batch data using our new Buffer system
+        states, actions, rewards, next_states, dones, log_probs_old, values = self.buffer.get_batch()
 
         # Estimate value of the final state for bootstrapping
         with torch.no_grad():
-            _, next_value = self.policy(torch.FloatTensor(next_states[-1]).unsqueeze(0).to(self.device))
+            _, next_value = self.policy(next_states[-1].unsqueeze(0))
             next_value = next_value.item()
         
         # Compute advantages and returns
-        advantages, returns = self.compute_gae(
-            rewards.tolist(), values.tolist(), dones.tolist(), next_value, self.gamma, self.lam
-        )
+        advantages, returns = self.compute_gae(rewards.tolist(), values.tolist(), dones.tolist(), next_value)
         advantages = torch.FloatTensor(advantages).to(self.device)
         returns = torch.FloatTensor(returns).to(self.device)
         advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
@@ -222,12 +205,12 @@ class PPOAgent(DQNAgent):
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
-                
+            
             total_policy_loss += actor_loss.item()
             total_value_loss += critic_loss.item()
             total_entropy += entropy.item()
 
-        self.buffer = []  # Clear on-policy buffer
+        self.buffer.clear()  # Clear on-policy buffer
 
         return {
             "policy_loss": total_policy_loss / self.epochs,
