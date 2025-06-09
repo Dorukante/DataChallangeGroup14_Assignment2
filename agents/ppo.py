@@ -23,10 +23,16 @@ class ActorCritic(nn.Module):
             hidden_dim (int): Size of the hidden layer.
         """
         super(ActorCritic, self).__init__()
+
         self.fc = nn.Sequential(
             nn.Linear(state_dim, hidden_dim),
+            nn.LayerNorm(hidden_dim),     # <- Added LayerNorm
             nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),  # Optional second hidden layer
+            nn.LayerNorm(hidden_dim),     # <- Second LayerNorm (optional)
+            nn.ReLU()
         )
+
         self.actor = nn.Sequential(
             nn.Linear(hidden_dim, action_dim),
             nn.Softmax(dim=-1)
@@ -34,15 +40,6 @@ class ActorCritic(nn.Module):
         self.critic = nn.Linear(hidden_dim, 1)
 
     def forward(self, x):
-        """
-        Forward pass through the actor-critic network.
-
-        Args:
-            x (torch.Tensor): Input state tensor.
-
-        Returns:
-            Tuple[torch.Tensor, torch.Tensor]: Policy distribution and state value.
-        """
         x = self.fc(x)
         policy_dist = self.actor(x)
         value = self.critic(x)
@@ -199,7 +196,10 @@ class PPOAgent(DQNAgent):
             surr2 = torch.clamp(ratio, 1 - self.clip_epsilon, 1 + self.clip_epsilon) * advantages
 
             actor_loss = -torch.min(surr1, surr2).mean()
-            critic_loss = F.mse_loss(values_pred.squeeze(), returns)
+            values_clipped = values + (values_pred.squeeze() - values).clamp(-self.clip_epsilon, self.clip_epsilon)
+            value_loss_1 = (values_pred.squeeze() - returns).pow(2)
+            value_loss_2 = (values_clipped - returns).pow(2)
+            critic_loss = torch.max(value_loss_1, value_loss_2).mean()
             loss = actor_loss + 0.5 * critic_loss - self.entropy_coeff * entropy
 
             self.optimizer.zero_grad()
