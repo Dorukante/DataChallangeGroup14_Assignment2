@@ -8,12 +8,11 @@ including the Q-network model, a replay buffer, and the agent class itself.
 2) TODO DEFINE RL METRICS THAT ARE SUITABLE FOR EVALUATION
 """
 
-#for dqn
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-#for buffer
+from agents.buffer import Buffer, Transition
 from collections import deque
 import random
 import numpy as np
@@ -34,61 +33,18 @@ class DQN(nn.Module):
     def __init__(self, state_dim: int, action_dim: int, hidden_dim: int = 128):
         super(DQN, self).__init__()
         self.fc1 = nn.Linear(state_dim, hidden_dim)
+        self.ln1 = nn.LayerNorm(hidden_dim)
         self.fc2 = nn.Linear(hidden_dim, hidden_dim)
-        self.out = nn.Linear(hidden_dim, action_dim)  # Outputs Q-values for each action
+        self.ln2 = nn.LayerNorm(hidden_dim)
+        self.fc3 = nn.Linear(hidden_dim, hidden_dim//2)
+        self.ln3 = nn.LayerNorm(hidden_dim//2)
+        self.out = nn.Linear(hidden_dim//2, action_dim)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        return self.out(x)  # Q-values for all actions
-
-# ----- Replay Buffer -----
-class Buffer:
-    """Replay buffer to store and sample experiences.
-
-    Uses a deque to store experiences up to a maximum capacity.
-
-    Args:
-        capacity (int): The maximum number of experiences to store in the buffer.
-    """
-    def __init__(self, capacity: int):
-        self.buffer = deque(maxlen=capacity)
-
-    def push(self, state: Any, action: int, reward: float, next_state: Any, done: bool) -> None:
-        """Adds an experience to the buffer.
-
-        Args:
-            state: The current state.
-            action (int): The action taken.
-            reward (float): The reward received.
-            next_state: The state reached after taking the action.
-            done (bool): True if the episode terminated, False otherwise.
-        """
-        self.buffer.append((state, action, reward, next_state, done))
-
-    def sample(self, batch_size: int) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-        """Samples a batch of experiences from the buffer.
-
-        Args:
-            batch_size (int): The number of experiences to sample.
-
-        Returns:
-            Tuple[5 * torch.Tensor]: A tuple containing tensors for states, actions, rewards,
-                next states, and done flags.
-        """
-        batch = random.sample(self.buffer, batch_size)
-        s, a, r, s_next, done = zip(*batch)
-
-        return (
-            torch.FloatTensor(np.array(s)),
-            torch.LongTensor(a),
-            torch.FloatTensor(np.array(r)),
-            torch.FloatTensor(np.array(s_next)),
-            torch.FloatTensor(np.array(done))
-        )
-
-    def __len__(self) -> int:
-        return len(self.buffer)
+        x = F.relu(self.ln1(self.fc1(x)))
+        x = F.relu(self.ln2(self.fc2(x)))
+        x = F.relu(self.ln3(self.fc3(x)))
+        return self.out(x)
 
 # ----- DQN Agent -----
 class DQNAgent:
@@ -135,7 +91,7 @@ class DQNAgent:
         self.target_network.eval()
 
         self.optimizer = optim.Adam(self.q_network.parameters(), lr=lr)
-        self.buffer = Buffer(buffer_capacity)
+        self.buffer = Buffer(self.device, buffer_capacity)
 
     def select_action(self, state: Any, greedy: bool = False) -> int:
         """Selects an action using an epsilon-greedy policy.
@@ -159,7 +115,7 @@ class DQNAgent:
 
     def store_experience(self, state: Any, action: int, reward: float, next_state: Any, done: bool) -> None:
         """Stores an experience tuple in the replay buffer."""
-        self.buffer.push(state, action, reward, next_state, done)
+        self.buffer.add(Transition(state, action, reward, next_state, done))
 
     def update_epsilon(self) -> None:
         """Updates the exploration rate epsilon according to its decay schedule."""
@@ -200,18 +156,10 @@ class DQNAgent:
             Optional[float]: The loss value for the current learning step, or None if
                            the buffer does not have enough samples yet.
         """
-        if len(self.buffer) < self.batch_size:
+        if self.buffer.size() < self.batch_size:
             return None
 
-        s, a, r, s_next, done = self.buffer.sample(self.batch_size)
-
-        # Move to device
-        s = s.to(self.device)
-        a = a.to(self.device)
-        r = r.to(self.device)
-        s_next = s_next.to(self.device)
-        done = done.to(self.device)
-
+        s, a, r, s_next, done = self.buffer.get_batch(self.batch_size)
         loss = self._compute_loss_for_batch(s, a, r, s_next, done)
 
         # Optimize the model
