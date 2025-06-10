@@ -320,7 +320,7 @@ if __name__ == "__main__":
                         help="Run the simulation with the GUI.")
     parser.add_argument("--agent", type=str, default="dqn", choices=["dqn", "ppo"],
                         help="Type of agent to use. Default: random")
-    parser.add_argument("--gamma", type=float, default=0.9, help="Discount factor gamma.")
+    parser.add_argument("--gamma", type=float, default=0.99, help="Discount factor gamma.")
     parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate")
     parser.add_argument("--buffer", type=int, default=10000, help="Maximum capacity of the replay buffer")
     parser.add_argument("--batch", type=int, default=64, help="Batch size for learning")
@@ -330,8 +330,8 @@ if __name__ == "__main__":
     parser.add_argument("--state_dim", type=int, default=0.995, help="  Dimensionality of the state space.")
     parser.add_argument("--hidden_dim", type=int, default=128, help=" Number of units in hidden layers of the DQN")
     parser.add_argument("--position", type=str, default="(3,11)", help="Start position of the agent")
-    parser.add_argument("--lamda", type=float, default=0.9, help=" λ for Generalized Advantage Estimation")
-    parser.add_argument("--clip_eps", type=float, default=0.3, help=" PPO Clipping Parameter")
+    parser.add_argument("--lamda", type=float, default=0.95, help=" λ for Generalized Advantage Estimation")
+    parser.add_argument("--clip_eps", type=float, default=0.2, help=" PPO Clipping Parameter")
     parser.add_argument("--ppo_epochs", type=int, default=4, help="Number of PPO Update Epochs per Rollout")
     parser.add_argument("--entropy_coeff", type=float, default=0.01, help="Entropy Coefficient")
 

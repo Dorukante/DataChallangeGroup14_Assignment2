@@ -33,13 +33,18 @@ class DQN(nn.Module):
     def __init__(self, state_dim: int, action_dim: int, hidden_dim: int = 128):
         super(DQN, self).__init__()
         self.fc1 = nn.Linear(state_dim, hidden_dim)
+        self.ln1 = nn.LayerNorm(hidden_dim)
         self.fc2 = nn.Linear(hidden_dim, hidden_dim)
-        self.out = nn.Linear(hidden_dim, action_dim)  # Outputs Q-values for each action
+        self.ln2 = nn.LayerNorm(hidden_dim)
+        self.fc3 = nn.Linear(hidden_dim, hidden_dim//2)
+        self.ln3 = nn.LayerNorm(hidden_dim//2)
+        self.out = nn.Linear(hidden_dim//2, action_dim)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        return self.out(x)  # Q-values for all actions
+        x = F.relu(self.ln1(self.fc1(x)))
+        x = F.relu(self.ln2(self.fc2(x)))
+        x = F.relu(self.ln3(self.fc3(x)))
+        return self.out(x)
 
 # ----- DQN Agent -----
 class DQNAgent:

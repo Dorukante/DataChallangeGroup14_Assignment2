@@ -1,0 +1,702 @@
+[
+  {
+    "episode": 1,
+    "avg_reward_per_step": -0.561091513216762,
+    "episode_length": 2080,
+    "epsilon": 0.95,
+    "avg_td_loss": 0.19498981579045738
+  },
+  {
+    "episode": 2,
+    "avg_reward_per_step": -0.36032936401068116,
+    "episode_length": 466,
+    "epsilon": 0.9025,
+    "avg_td_loss": 3.4683895388642094
+  },
+  {
+    "episode": 3,
+    "avg_reward_per_step": 0.3302183486500963,
+    "episode_length": 130,
+    "epsilon": 0.8573749999999999,
+    "avg_td_loss": 9.34044600862723
+  },
+  {
+    "episode": 4,
+    "avg_reward_per_step": 0.220695666918782,
+    "episode_length": 144,
+    "epsilon": 0.8145062499999999,
+    "avg_td_loss": 6.7138457980213895
+  },
+  {
+    "episode": 5,
+    "avg_reward_per_step": 0.20168586842166283,
+    "episode_length": 151,
+    "epsilon": 0.7737809374999999,
+    "avg_td_loss": 7.255804072744799
+  },
+  {
+    "episode": 6,
+    "avg_reward_per_step": 0.5142305685019037,
+    "episode_length": 106,
+    "epsilon": 0.7350918906249998,
+    "avg_td_loss": 12.26345625829022
+  },
+  {
+    "episode": 7,
+    "avg_reward_per_step": 0.0695011415838972,
+    "episode_length": 188,
+    "epsilon": 0.6983372960937497,
+    "avg_td_loss": 9.557894200086594
+  },
+  {
+    "episode": 8,
+    "avg_reward_per_step": 0.38484834665347883,
+    "episode_length": 128,
+    "epsilon": 0.6634204312890623,
+    "avg_td_loss": 10.90835166303441
+  },
+  {
+    "episode": 9,
+    "avg_reward_per_step": 0.6023925952822787,
+    "episode_length": 102,
+    "epsilon": 0.6302494097246091,
+    "avg_td_loss": 11.046853294559554
+  },
+  {
+    "episode": 10,
+    "avg_reward_per_step": 0.1663693254552895,
+    "episode_length": 158,
+    "epsilon": 0.5987369392383786,
+    "avg_td_loss": 14.276663656476178
+  },
+  {
+    "episode": 11,
+    "avg_reward_per_step": 0.6179882688174105,
+    "episode_length": 98,
+    "epsilon": 0.5688000922764596,
+    "avg_td_loss": 14.629756192771756
+  },
+  {
+    "episode": 12,
+    "avg_reward_per_step": 0.11709733569746908,
+    "episode_length": 164,
+    "epsilon": 0.5403600876626365,
+    "avg_td_loss": 17.786109780392994
+  },
+  {
+    "episode": 13,
+    "avg_reward_per_step": 0.8508654288405604,
+    "episode_length": 84,
+    "epsilon": 0.5133420832795047,
+    "avg_td_loss": 21.042221847034636
+  },
+  {
+    "episode": 14,
+    "avg_reward_per_step": 0.3246596063874459,
+    "episode_length": 134,
+    "epsilon": 0.48767497911552943,
+    "avg_td_loss": 18.9270206458533
+  },
+  {
+    "episode": 15,
+    "avg_reward_per_step": 0.23947197330876036,
+    "episode_length": 153,
+    "epsilon": 0.46329123015975293,
+    "avg_td_loss": 18.892360169903125
+  },
+  {
+    "episode": 16,
+    "avg_reward_per_step": -0.047624809415408004,
+    "episode_length": 233,
+    "epsilon": 0.44012666865176525,
+    "avg_td_loss": 15.72123740364042
+  },
+  {
+    "episode": 17,
+    "avg_reward_per_step": 0.146471202228351,
+    "episode_length": 172,
+    "epsilon": 0.41812033521917696,
+    "avg_td_loss": 15.774845148241797
+  },
+  {
+    "episode": 18,
+    "avg_reward_per_step": 0.10613049683214487,
+    "episode_length": 182,
+    "epsilon": 0.3972143184582181,
+    "avg_td_loss": 12.905031002484835
+  },
+  {
+    "episode": 19,
+    "avg_reward_per_step": 0.1191281526002345,
+    "episode_length": 179,
+    "epsilon": 0.37735360253530714,
+    "avg_td_loss": 11.586700319577862
+  },
+  {
+    "episode": 20,
+    "avg_reward_per_step": 0.23450389259998816,
+    "episode_length": 153,
+    "epsilon": 0.35848592240854177,
+    "avg_td_loss": 10.638867345510745
+  },
+  {
+    "episode": 21,
+    "avg_reward_per_step": 0.45077765160610833,
+    "episode_length": 115,
+    "epsilon": 0.34056162628811465,
+    "avg_td_loss": 8.077073688092439
+  },
+  {
+    "episode": 22,
+    "avg_reward_per_step": 0.6145825495296647,
+    "episode_length": 106,
+    "epsilon": 0.3235335449737089,
+    "avg_td_loss": 7.358038301737803
+  },
+  {
+    "episode": 23,
+    "avg_reward_per_step": 0.7280571460164345,
+    "episode_length": 95,
+    "epsilon": 0.30735686772502346,
+    "avg_td_loss": 17.66524593704625
+  },
+  {
+    "episode": 24,
+    "avg_reward_per_step": -0.2003271522622612,
+    "episode_length": 343,
+    "epsilon": 0.2919890243387723,
+    "avg_td_loss": 5.7296558465624
+  },
+  {
+    "episode": 25,
+    "avg_reward_per_step": 0.2403856827722113,
+    "episode_length": 161,
+    "epsilon": 0.27738957312183365,
+    "avg_td_loss": 7.542112601469762
+  },
+  {
+    "episode": 26,
+    "avg_reward_per_step": 0.2771904515267659,
+    "episode_length": 154,
+    "epsilon": 0.263520094465742,
+    "avg_td_loss": 4.9602978841050875
+  },
+  {
+    "episode": 27,
+    "avg_reward_per_step": 1.4460554051644998,
+    "episode_length": 61,
+    "epsilon": 0.25034408974245487,
+    "avg_td_loss": 5.315713597125694
+  },
+  {
+    "episode": 28,
+    "avg_reward_per_step": 0.968703873664668,
+    "episode_length": 80,
+    "epsilon": 0.2378268852553321,
+    "avg_td_loss": 6.766545063257217
+  },
+  {
+    "episode": 29,
+    "avg_reward_per_step": 2.0615825334948004,
+    "episode_length": 47,
+    "epsilon": 0.2259355409925655,
+    "avg_td_loss": 7.42773156216804
+  },
+  {
+    "episode": 30,
+    "avg_reward_per_step": 0.8968967020420773,
+    "episode_length": 85,
+    "epsilon": 0.2146387639429372,
+    "avg_td_loss": 6.126055762347053
+  },
+  {
+    "episode": 31,
+    "avg_reward_per_step": 0.6336876116307377,
+    "episode_length": 104,
+    "epsilon": 0.20390682574579033,
+    "avg_td_loss": 6.24065073636862
+  },
+  {
+    "episode": 32,
+    "avg_reward_per_step": 2.119430046152698,
+    "episode_length": 46,
+    "epsilon": 0.1937114844585008,
+    "avg_td_loss": 4.6025770332502285
+  },
+  {
+    "episode": 33,
+    "avg_reward_per_step": -0.4236049689298712,
+    "episode_length": 752,
+    "epsilon": 0.18402591023557577,
+    "avg_td_loss": 3.316800077386359
+  },
+  {
+    "episode": 34,
+    "avg_reward_per_step": 2.569331323654122,
+    "episode_length": 39,
+    "epsilon": 0.17482461472379698,
+    "avg_td_loss": 2.1015114845373692
+  },
+  {
+    "episode": 35,
+    "avg_reward_per_step": 0.7684387033662433,
+    "episode_length": 95,
+    "epsilon": 0.16608338398760714,
+    "avg_td_loss": 1.893576339985195
+  },
+  {
+    "episode": 36,
+    "avg_reward_per_step": 1.608986881193086,
+    "episode_length": 56,
+    "epsilon": 0.15777921478822676,
+    "avg_td_loss": 1.4915431908198766
+  },
+  {
+    "episode": 37,
+    "avg_reward_per_step": 2.4608245794303834,
+    "episode_length": 41,
+    "epsilon": 0.14989025404881542,
+    "avg_td_loss": 1.2238374279766548
+  },
+  {
+    "episode": 38,
+    "avg_reward_per_step": 1.7814685938416766,
+    "episode_length": 52,
+    "epsilon": 0.14239574134637464,
+    "avg_td_loss": 1.2736630256359394
+  },
+  {
+    "episode": 39,
+    "avg_reward_per_step": 2.37541817777395,
+    "episode_length": 42,
+    "epsilon": 0.1352759542790559,
+    "avg_td_loss": 1.131330308460054
+  },
+  {
+    "episode": 40,
+    "avg_reward_per_step": 2.267666698226361,
+    "episode_length": 43,
+    "epsilon": 0.1285121565651031,
+    "avg_td_loss": 1.319316293611083
+  },
+  {
+    "episode": 41,
+    "avg_reward_per_step": 2.7543452931240857,
+    "episode_length": 37,
+    "epsilon": 0.12208654873684793,
+    "avg_td_loss": 1.3481390927288983
+  },
+  {
+    "episode": 42,
+    "avg_reward_per_step": 2.3076858453563838,
+    "episode_length": 43,
+    "epsilon": 0.11598222130000553,
+    "avg_td_loss": 1.3457103163697
+  },
+  {
+    "episode": 43,
+    "avg_reward_per_step": 2.5014198703832875,
+    "episode_length": 40,
+    "epsilon": 0.11018311023500525,
+    "avg_td_loss": 1.352541622519493
+  },
+  {
+    "episode": 44,
+    "avg_reward_per_step": 2.27290876617764,
+    "episode_length": 43,
+    "epsilon": 0.10467395472325498,
+    "avg_td_loss": 1.0637835395890614
+  },
+  {
+    "episode": 45,
+    "avg_reward_per_step": 2.7695876953926954,
+    "episode_length": 37,
+    "epsilon": 0.09944025698709223,
+    "avg_td_loss": 0.9984164656819524
+  },
+  {
+    "episode": 46,
+    "avg_reward_per_step": 2.6395412522263326,
+    "episode_length": 38,
+    "epsilon": 0.09446824413773762,
+    "avg_td_loss": 1.0835059293006595
+  },
+  {
+    "episode": 47,
+    "avg_reward_per_step": 2.606795367807084,
+    "episode_length": 39,
+    "epsilon": 0.08974483193085074,
+    "avg_td_loss": 1.0044872478032723
+  },
+  {
+    "episode": 48,
+    "avg_reward_per_step": 2.324223103030739,
+    "episode_length": 43,
+    "epsilon": 0.0852575903343082,
+    "avg_td_loss": 1.299845163212266
+  },
+  {
+    "episode": 49,
+    "avg_reward_per_step": 1.4243125726571046,
+    "episode_length": 62,
+    "epsilon": 0.08099471081759278,
+    "avg_td_loss": 1.7348177682968877
+  },
+  {
+    "episode": 50,
+    "avg_reward_per_step": 1.6108598232357296,
+    "episode_length": 57,
+    "epsilon": 0.07694497527671314,
+    "avg_td_loss": 1.4906068988013685
+  },
+  {
+    "episode": 51,
+    "avg_reward_per_step": 2.1325997901705716,
+    "episode_length": 46,
+    "epsilon": 0.07309772651287748,
+    "avg_td_loss": 1.5260024316932843
+  },
+  {
+    "episode": 52,
+    "avg_reward_per_step": 2.820773588474191,
+    "episode_length": 36,
+    "epsilon": 0.0694428401872336,
+    "avg_td_loss": 1.3958693229489856
+  },
+  {
+    "episode": 53,
+    "avg_reward_per_step": 2.6761083503452823,
+    "episode_length": 38,
+    "epsilon": 0.0659706981778719,
+    "avg_td_loss": 1.6523759443508952
+  },
+  {
+    "episode": 54,
+    "avg_reward_per_step": 3.1325173231987553,
+    "episode_length": 33,
+    "epsilon": 0.0626721632689783,
+    "avg_td_loss": 1.5462937571785667
+  },
+  {
+    "episode": 55,
+    "avg_reward_per_step": 2.7311146207325914,
+    "episode_length": 37,
+    "epsilon": 0.059538555105529384,
+    "avg_td_loss": 1.7401081774685834
+  },
+  {
+    "episode": 56,
+    "avg_reward_per_step": 2.3584870419531314,
+    "episode_length": 42,
+    "epsilon": 0.05656162735025291,
+    "avg_td_loss": 1.7701612881251745
+  },
+  {
+    "episode": 57,
+    "avg_reward_per_step": 1.623224983771179,
+    "episode_length": 56,
+    "epsilon": 0.053733545982740265,
+    "avg_td_loss": 1.582320691219398
+  },
+  {
+    "episode": 58,
+    "avg_reward_per_step": 2.58993630733359,
+    "episode_length": 39,
+    "epsilon": 0.05104686868360325,
+    "avg_td_loss": 1.5730848556909807
+  },
+  {
+    "episode": 59,
+    "avg_reward_per_step": 2.753312817435269,
+    "episode_length": 37,
+    "epsilon": 0.04849452524942309,
+    "avg_td_loss": 1.7146664213489842
+  },
+  {
+    "episode": 60,
+    "avg_reward_per_step": 2.6604179531231593,
+    "episode_length": 38,
+    "epsilon": 0.04606979898695193,
+    "avg_td_loss": 1.9495929118834043
+  },
+  {
+    "episode": 61,
+    "avg_reward_per_step": 3.059365039875251,
+    "episode_length": 34,
+    "epsilon": 0.04376630903760433,
+    "avg_td_loss": 2.1726907614399407
+  },
+  {
+    "episode": 62,
+    "avg_reward_per_step": 2.8311716932447992,
+    "episode_length": 36,
+    "epsilon": 0.041577993585724116,
+    "avg_td_loss": 2.6568821171919503
+  },
+  {
+    "episode": 63,
+    "avg_reward_per_step": 2.7809361509517525,
+    "episode_length": 37,
+    "epsilon": 0.03949909390643791,
+    "avg_td_loss": 2.4725134050523914
+  },
+  {
+    "episode": 64,
+    "avg_reward_per_step": 2.731387320955694,
+    "episode_length": 37,
+    "epsilon": 0.03752413921111601,
+    "avg_td_loss": 1.8587723036070127
+  },
+  {
+    "episode": 65,
+    "avg_reward_per_step": 2.869994466622431,
+    "episode_length": 36,
+    "epsilon": 0.03564793225056021,
+    "avg_td_loss": 1.5684183686971664
+  },
+  {
+    "episode": 66,
+    "avg_reward_per_step": 2.5700880475167045,
+    "episode_length": 39,
+    "epsilon": 0.0338655356380322,
+    "avg_td_loss": 1.4091231914666982
+  },
+  {
+    "episode": 67,
+    "avg_reward_per_step": 2.931421270813467,
+    "episode_length": 35,
+    "epsilon": 0.032172258856130585,
+    "avg_td_loss": 1.2866553851536342
+  },
+  {
+    "episode": 68,
+    "avg_reward_per_step": 2.8751584637249,
+    "episode_length": 36,
+    "epsilon": 0.030563645913324056,
+    "avg_td_loss": 1.329654950234625
+  },
+  {
+    "episode": 69,
+    "avg_reward_per_step": 2.747954858632112,
+    "episode_length": 37,
+    "epsilon": 0.029035463617657853,
+    "avg_td_loss": 1.2421429286131989
+  },
+  {
+    "episode": 70,
+    "avg_reward_per_step": 2.6563392681234284,
+    "episode_length": 38,
+    "epsilon": 0.027583690436774957,
+    "avg_td_loss": 1.233787715435028
+  },
+  {
+    "episode": 71,
+    "avg_reward_per_step": 2.939953445047573,
+    "episode_length": 35,
+    "epsilon": 0.02620450591493621,
+    "avg_td_loss": 1.1234101022992815
+  },
+  {
+    "episode": 72,
+    "avg_reward_per_step": 2.501507104921205,
+    "episode_length": 40,
+    "epsilon": 0.0248942806191894,
+    "avg_td_loss": 1.1989966057240964
+  },
+  {
+    "episode": 73,
+    "avg_reward_per_step": 2.849232256177415,
+    "episode_length": 36,
+    "epsilon": 0.023649566588229927,
+    "avg_td_loss": 1.1817358798450894
+  },
+  {
+    "episode": 74,
+    "avg_reward_per_step": 2.7186901771488836,
+    "episode_length": 37,
+    "epsilon": 0.022467088258818428,
+    "avg_td_loss": 1.4250802301071785
+  },
+  {
+    "episode": 75,
+    "avg_reward_per_step": 2.6566609639010963,
+    "episode_length": 38,
+    "epsilon": 0.021343733845877507,
+    "avg_td_loss": 1.2687505358143856
+  },
+  {
+    "episode": 76,
+    "avg_reward_per_step": 2.618938330612626,
+    "episode_length": 39,
+    "epsilon": 0.02027654715358363,
+    "avg_td_loss": 1.282701327250554
+  },
+  {
+    "episode": 77,
+    "avg_reward_per_step": 2.839642399880697,
+    "episode_length": 36,
+    "epsilon": 0.019262719795904448,
+    "avg_td_loss": 1.7585801250404782
+  },
+  {
+    "episode": 78,
+    "avg_reward_per_step": 1.8172427250187237,
+    "episode_length": 52,
+    "epsilon": 0.018299583806109226,
+    "avg_td_loss": 2.0189702934943714
+  },
+  {
+    "episode": 79,
+    "avg_reward_per_step": 0.8270360223896366,
+    "episode_length": 90,
+    "epsilon": 0.017384604615803764,
+    "avg_td_loss": 2.3214994768301644
+  },
+  {
+    "episode": 80,
+    "avg_reward_per_step": 2.2213329491843377,
+    "episode_length": 44,
+    "epsilon": 0.016515374385013576,
+    "avg_td_loss": 2.1845540797168557
+  },
+  {
+    "episode": 81,
+    "avg_reward_per_step": -0.3539701400071813,
+    "episode_length": 708,
+    "epsilon": 0.015689605665762895,
+    "avg_td_loss": 1.3812368017552936
+  },
+  {
+    "episode": 82,
+    "avg_reward_per_step": 2.8989884702116586,
+    "episode_length": 35,
+    "epsilon": 0.01490512538247475,
+    "avg_td_loss": 0.7914754186357771
+  },
+  {
+    "episode": 83,
+    "avg_reward_per_step": 2.844473337076186,
+    "episode_length": 36,
+    "epsilon": 0.014159869113351011,
+    "avg_td_loss": 0.6909503564238548
+  },
+  {
+    "episode": 84,
+    "avg_reward_per_step": 3.0461246891085936,
+    "episode_length": 34,
+    "epsilon": 0.01345187565768346,
+    "avg_td_loss": 0.7428678624770221
+  },
+  {
+    "episode": 85,
+    "avg_reward_per_step": 3.030299975792022,
+    "episode_length": 34,
+    "epsilon": 0.012779281874799287,
+    "avg_td_loss": 0.7902841804658666
+  },
+  {
+    "episode": 86,
+    "avg_reward_per_step": 3.0461260928955585,
+    "episode_length": 34,
+    "epsilon": 0.012140317781059323,
+    "avg_td_loss": 0.8961373970789068
+  },
+  {
+    "episode": 87,
+    "avg_reward_per_step": 3.0232333894788597,
+    "episode_length": 34,
+    "epsilon": 0.011533301892006355,
+    "avg_td_loss": 0.8658535524326212
+  },
+  {
+    "episode": 88,
+    "avg_reward_per_step": 2.6477762273962986,
+    "episode_length": 38,
+    "epsilon": 0.010956636797406038,
+    "avg_td_loss": 0.9568032653708207
+  },
+  {
+    "episode": 89,
+    "avg_reward_per_step": 2.801731506130406,
+    "episode_length": 36,
+    "epsilon": 0.010408804957535735,
+    "avg_td_loss": 0.8653091548217667
+  },
+  {
+    "episode": 90,
+    "avg_reward_per_step": 2.818664725327848,
+    "episode_length": 36,
+    "epsilon": 0.01,
+    "avg_td_loss": 0.805675684577889
+  },
+  {
+    "episode": 91,
+    "avg_reward_per_step": 2.951350480715498,
+    "episode_length": 35,
+    "epsilon": 0.01,
+    "avg_td_loss": 0.7542654488767896
+  },
+  {
+    "episode": 92,
+    "avg_reward_per_step": 2.851318532584793,
+    "episode_length": 36,
+    "epsilon": 0.01,
+    "avg_td_loss": 0.8035724295510186
+  },
+  {
+    "episode": 93,
+    "avg_reward_per_step": 2.8729967012512714,
+    "episode_length": 36,
+    "epsilon": 0.01,
+    "avg_td_loss": 0.9225583672523499
+  },
+  {
+    "episode": 94,
+    "avg_reward_per_step": 2.6471900057631985,
+    "episode_length": 38,
+    "epsilon": 0.01,
+    "avg_td_loss": 1.040172311820482
+  },
+  {
+    "episode": 95,
+    "avg_reward_per_step": 2.9238323807886912,
+    "episode_length": 35,
+    "epsilon": 0.01,
+    "avg_td_loss": 0.9255446987492698
+  },
+  {
+    "episode": 96,
+    "avg_reward_per_step": 3.0219733934464905,
+    "episode_length": 34,
+    "epsilon": 0.01,
+    "avg_td_loss": 0.74674753055853
+  },
+  {
+    "episode": 97,
+    "avg_reward_per_step": 3.0496530857278703,
+    "episode_length": 34,
+    "epsilon": 0.01,
+    "avg_td_loss": 0.6679446688469719
+  },
+  {
+    "episode": 98,
+    "avg_reward_per_step": 2.659342060741252,
+    "episode_length": 38,
+    "epsilon": 0.01,
+    "avg_td_loss": 0.7090268378195009
+  },
+  {
+    "episode": 99,
+    "avg_reward_per_step": 2.821326256256121,
+    "episode_length": 36,
+    "epsilon": 0.01,
+    "avg_td_loss": 0.6525321222013898
+  },
+  {
+    "episode": 100,
+    "avg_reward_per_step": 3.0221708508197658,
+    "episode_length": 34,
+    "epsilon": 0.01,
+    "avg_td_loss": 0.7329071418327444
+  }
+]

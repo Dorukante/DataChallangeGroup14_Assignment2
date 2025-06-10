@@ -96,6 +96,9 @@ class PPOAgent(DQNAgent):
         self.clip_epsilon = clip_eps
         self.entropy_coeff = entropy_coeff
         self.epochs = epochs
+        self.reward_mean = 0.0
+        self.reward_var = 1.0
+        self.reward_alpha = 0.01  # smoothing factor
 
     def select_action(self, state: np.ndarray, greedy: bool = False) -> Union[int, Tuple[int, float, float]]:
         """
@@ -139,7 +142,12 @@ class PPOAgent(DQNAgent):
             log_prob (float): Log probability of the taken action.
             value (float): Estimated state value.
         """
-        self.buffer.add(PPOTransition(state, action, reward, next_state, done, log_prob, value))
+        self.reward_mean = (1 - self.reward_alpha) * self.reward_mean + self.reward_alpha * reward
+        self.reward_var = (1 - self.reward_alpha) * self.reward_var + self.reward_alpha * ((reward - self.reward_mean) ** 2)
+        reward_normalized = (reward - self.reward_mean) / (np.sqrt(self.reward_var) + 1e-8)
+
+        # Store normalized reward
+        self.buffer.add(PPOTransition(state, action, reward_normalized, next_state, done, log_prob, value))
 
     def compute_gae(self, rewards, values, dones, next_value):
         """
