@@ -73,7 +73,8 @@ class RaySensor(AgentSensor):
             agentbody.position,
             self.sensor_end,
             1,
-            pymunk.ShapeFilter(group=1)
+            pymunk.ShapeFilter(group=1,  # our agents group
+                               mask=ContinuousEnvironment.CATEGORY_OBSTACLE),
         )
         if sensed_object is None:
             self.sensed_object_distance = self.ray_length
@@ -85,9 +86,10 @@ class RaySensor(AgentSensor):
 
             self.sensed_object_distance = sensed_object.point.get_distance(
                 agentbody.position)
-            if sensed_object.shape.collision_type == ContinuousEnvironment.GOAL_COLLISION_TYPE:
-                self.sensed_object_type = AgentState.SENSOR_TYPE_GOAL_VALUE
-            elif sensed_object.shape.collision_type == ContinuousEnvironment.AGENT_COLLISION_TYPE:
+
+            assert(sensed_object.shape.collision_type != ContinuousEnvironment.GOAL_COLLISION_TYPE), \
+                "RaySensor should not sense goals, only obstacles and other agents."
+            if sensed_object.shape.collision_type == ContinuousEnvironment.AGENT_COLLISION_TYPE:
                 self.sensed_object_type = AgentState.SENSOR_TYPE_OTHER_AGENT_VALUE
             elif sensed_object.shape.collision_type == ContinuousEnvironment.OBSTACLE_COLLISION_TYPE:
                 self.sensed_object_type = AgentState.SENSOR_TYPE_COLLISION_VALUE
@@ -109,7 +111,6 @@ class AgentState:
     You can modify it to include stuff like sensor readings, like it sensing distance to obstacles in front of it."""
 
     SENSOR_TYPE_NONE_VALUE: float = 0.0
-    SENSOR_TYPE_GOAL_VALUE: float = 10.0
     SENSOR_TYPE_OTHER_AGENT_VALUE: float = -10.0
     SENSOR_TYPE_COLLISION_VALUE: float = -100.0
 
@@ -206,7 +207,7 @@ class ContinuousEnvironment:
 
     GOAL_COLLISION_TYPE = 1  # collision type for goals
     AGENT_COLLISION_TYPE = 2  # collision type for agent
-    OBSTACLE_COLLISION_TYPE = 3  # collision type for obstacles
+    OBSTACLE_COLLISION_TYPE = 4  # collision type for obstacles
 
     CATEGORY_AGENT = 0b1
     CATEGORY_GOAL = 0b10
@@ -224,6 +225,9 @@ class ContinuousEnvironment:
             body.position = goal_start_position
             shape = pymunk.Circle(body, self.GOAL_RADIUS)
             shape.collision_type = self.GOAL_COLLISION_TYPE
+            shape.filter = pymunk.ShapeFilter(
+                categories=ContinuousEnvironment.CATEGORY_GOAL,
+            )
             shape.sensor = True  # agent can move through it instead of treating it as solid object
             self.space.add(body, shape)
 
