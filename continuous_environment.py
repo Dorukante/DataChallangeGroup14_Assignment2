@@ -154,7 +154,8 @@ class AgentState:
                 raise ValueError(f"Sensor {sensor} returned {len(sensor_values)} values, expected {sensor.NUMBER_OF_STATE_VALUES}")
             self.sensor_values[index:index + sensor.NUMBER_OF_STATE_VALUES] = sensor_values
             index += sensor.NUMBER_OF_STATE_VALUES
-        self.position = agent_body.position  # not given in state for now
+        self.position = agent_body.position
+
 
     def size(self) -> int:
         """Returns the size of the state vector. Static method because the agents will
@@ -162,23 +163,24 @@ class AgentState:
         modify this if you add more state variables"""
         return len(self.to_numpy())
 
-    JUST_FOUND_GOAL = 0
-    ROTATION_INDEX_COS = 1
-    ROTATION_INDEX_SIN = 2
-    COLLISION_VALUE_INDEX = 3
+    POSITION_INDEX_X = 0
+    POSITION_INDEX_Y = 1
+    ROTATION_INDEX_COS = 2
+    ROTATION_INDEX_SIN = 3
+    # COLLISION_VALUE_INDEX = 3
 
     def to_numpy(self) -> np.ndarray:
         """Convert the agent state to a numpy array. Most RL algorithms probably prefer this"""
         return np.array([
-            self.just_found_goal,
+            self.position.x,
+            self.position.y,
+            # self.just_found_goal,
             np.cos(self.rotation),
             np.sin(self.rotation),
-            self.collision_value,
-            *self.past_actions,
+            # self.collision_value,
+            # *self.past_actions,
             *self.sensor_values,
             # *self.past_sensor_values,
-            # self.position.x,
-            # self.position.y,
         ], dtype=np.float32)
 
 
