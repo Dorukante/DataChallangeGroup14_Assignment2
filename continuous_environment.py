@@ -215,7 +215,7 @@ class ContinuousEnvironment:
     CATEGORY_GOAL = 0b10
     CATEGORY_OBSTACLE = 0b100
 
-    GUI_RENDER_INTERVAL = 0.5  # physics seconds, how often to render the GUI
+    GUI_RENDER_INTERVAL = 2.5  # physics seconds, how often to render the GUI
 
     def reset_goals(self):
         for goal in self.current_goals:
