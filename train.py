@@ -17,15 +17,11 @@ def reward_func(env, state, action, next_state, done):
     goal_positions = list(env.current_goals.keys())
     if not goal_positions:
         return 100.0
-    # all goals reached needs a big reward or its just going to
-    # abuse distance rewards when theres multiple goals
 
     progress_reward = np.tanh(env.progress_to_goal * 0.01)
     collisions_this_step = env.agent_collided_with_obstacle_count_after - env.agent_collided_with_obstacle_count_before
-    reached_goal = next_state[AgentState.JUST_FOUND_GOAL]
 
-    return -0.5 + reached_goal * 30.0 \
-           - collisions_this_step + progress_reward * 5 \
+    return -0.5 + collisions_this_step + progress_reward * 5 \
 
 
 def format_args_summary(agent_type: str, args) -> str:
@@ -80,30 +76,17 @@ def main(args):
     agent_state: AgentState = AgentState(
 
         sensors = [
-            # front sensor, these determine distance/type
-            RaySensor(ray_angle=0, ray_length=1000),
-            # semi-front sensors
-            RaySensor(ray_angle=np.pi * (1.0 / 32), ray_length=600,
-                      ray_offset=(0, 16)),
-            RaySensor(ray_angle=np.pi * (-1.0 / 32), ray_length=600,
-                      ray_offset=(0, -16)),
-            RaySensor(ray_angle=np.pi * (1.0/16), ray_length=400,
-                      ray_offset=(0, 16)),
-            RaySensor(ray_angle=np.pi * (-1.0/16), ray_length=400,
-                      ray_offset=(0, -16)),
-            RaySensor(ray_angle=np.pi * (-2.0 / 16), ray_length=300,
-                      ray_offset=(0, -32)),
-            RaySensor(ray_angle=np.pi * (2.0 / 16), ray_length=300,
-                      ray_offset=(0, 32)),
+            # RaySensorNoType(ray_angle=0, ray_length=1000),
+            RaySensorNoType(ray_angle=0, ray_length=600),
+            RaySensorNoType(ray_angle=np.pi * 0.5, ray_length=600),
+            RaySensorNoType(ray_angle=np.pi * -0.5, ray_length=600),
+            RaySensorNoType(ray_angle=np.pi, ray_length=600),
 
-            RaySensor(ray_angle=np.pi / 4, ray_length=100),
-            RaySensor(ray_angle=np.pi / 2, ray_length=100),
-            RaySensor(ray_angle=3 * np.pi / 4, ray_length=100),
-            RaySensor(ray_angle=5 * np.pi / 4, ray_length=100),
-            RaySensor(ray_angle=3 * np.pi / 2, ray_length=100),
-            RaySensor(ray_angle=7 * np.pi / 4, ray_length=100),
+            RaySensorNoType(ray_angle=np.pi * 1.25, ray_length=600),
+            RaySensorNoType(ray_angle=np.pi * 0.75, ray_length=600),
+            RaySensorNoType(ray_angle=np.pi * 0.25, ray_length=600),
+            RaySensorNoType(ray_angle=np.pi * 1.75, ray_length=600),
 
-            RaySensorNoType(ray_angle=np.pi, ray_length=50), # back sensor
         ]
     )
     print("Agent State space is size: ", agent_state.size())
@@ -338,3 +321,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
     start_position = ast.literal_eval(args.position)
     main(args)
+# end of new code
