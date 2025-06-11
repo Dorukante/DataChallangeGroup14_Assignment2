@@ -268,6 +268,9 @@ class ContinuousGUI:
                 pygame.draw.line(background, (0,0,0),
                                  sensor.sensor_start,
                                  sensor.sensed_object_position, 2)
+                if sensor.sensed_object_position != sensor.sensor_end:
+                    pygame.draw.circle(background, self.COLOR_COLLISION_INDICATOR,
+                                       sensor.sensed_object_position, 5)
             else:
                 raise NotImplementedError(f"Sensor type {type(sensor)} not implemented in render method.")
         # draw agent circle
