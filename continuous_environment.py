@@ -38,12 +38,13 @@ class RaySensor(AgentSensor):
 
     name = "RaySensor"
 
-    def __init__(self, ray_length: float = 250, ray_angle: float = 0.0, ray_offset: Vector2 = (0, 0)):
+    def __init__(self, ray_length: float = 250, ray_angle: float = 0.0, ray_offset: Vector2 = (0, 0), verbose=False):
         super().__init__()
-        print("Creating new RaySensor with parameters:")
-        print(f"  ray_length: {ray_length}")
-        print(f"  ray_angle: {ray_angle}")
-        print(f"  ray_offset: {ray_offset}")
+        if verbose:
+            print("Creating new RaySensor with parameters:")
+            print(f"  ray_length: {ray_length}")
+            print(f"  ray_angle: {ray_angle}")
+            print(f"  ray_offset: {ray_offset}")
 
         self.is_active = True
 
@@ -263,7 +264,8 @@ class ContinuousEnvironment:
             start: Vector2,
             extents: Tuple[int, int] = (512, 512),
             additional_obstacles: list[tuple[Vector2, Vector2]] = [],
-            use_gui: bool = True,
+            train_gui: bool = False,
+            test_gui: bool = False,
         ):
         self.agent_state = agent_initial_state
         self.initial_goal_positions = goals
@@ -280,8 +282,10 @@ class ContinuousEnvironment:
         # environment size, note that without boundaries the agent can move outside this
         self.extents = extents
 
-        self.use_gui = use_gui
-        if use_gui:
+        self.train_gui = train_gui
+        self.test_gui = test_gui
+        self.gui = None
+        if train_gui:
             self.gui = ContinuousGUI(extents=self.extents, window_size=(1024, 768))
 
         # physics space
@@ -327,7 +331,7 @@ class ContinuousEnvironment:
 
 
     @classmethod
-    def load_from_file(cls, file_path: str, agent_state:AgentState, use_gui: bool = True) -> 'ContinuousEnvironment':
+    def load_from_file(cls, file_path: str, agent_state:AgentState, train_gui: bool = True, test_gui: bool = True) -> 'ContinuousEnvironment':
         """Loads environment configuration from a JSON file."""
         with open(file_path + '.json', 'r') as f:
             config = json.load(f)
@@ -345,7 +349,8 @@ class ContinuousEnvironment:
             start=tuple(config["start_position"]),
             extents=tuple(config["extents"]),
             additional_obstacles=parsed_obstacles,
-            use_gui=use_gui
+            train_gui=train_gui,
+            test_gui=test_gui,
         )
 
     def _on_agent_obstacle_collision(self, arbiter, space, data) -> None:
@@ -377,7 +382,7 @@ class ContinuousEnvironment:
         self.space.add(body, shape)
         self.obstacles.append((body, shape))
 
-    def step(self, agent_action: int, time_steps: int = 15, dt: float = 1.0 / 30.0):
+    def step(self, agent_action: int, time_steps: int = 15, dt: float = 1.0 / 30.0, render: bool = False):
         """Advance the physics simulation by dt seconds.
         If using GUI, update the display. Returns agents new state, and a terminal flag
         (Unlike the given implementation the reward is not returned here)
@@ -431,7 +436,8 @@ class ContinuousEnvironment:
                     self.agent_body.position) for goal in self.current_goals.values())
             self.progress_to_goal = self.dist_closest_goal_before - self.dist_closest_goal_after
 
-        if self.use_gui:
+        # render the GUI if enabled for training or testing
+        if render:
             self.render_interval_timer += dt * time_steps
             if self.render_interval_timer >= self.GUI_RENDER_INTERVAL:
                 self.render_interval_timer = 0.0
@@ -508,7 +514,11 @@ class ContinuousEnvironment:
         if agent_start_pos is not None:
             self.start = agent_start_pos
 
-        goals_reached = 0
+        if self.test_gui:
+            if self.gui is None:
+                self.gui = ContinuousGUI(extents=self.extents, window_size=(1024, 768))
+            self.gui.reset()
+            self.render_interval_timer = 0.0
 
         state = self.reset()
         initial_position = self.agent_body.position
@@ -523,10 +533,24 @@ class ContinuousEnvironment:
                 break
 
             try:
-                next_state, done = self.step(action)
+                next_state, done = self.step(action, render=self.test_gui)
             except Exception as e:
                 print(f"Error during env.step(): {e}")
+                if self.test_gui:
+                    self.gui.close()
                 break
+
+            if self.test_gui:
+                self.render_interval_timer += self.GUI_RENDER_INTERVAL
+                if self.render_interval_timer >= self.GUI_RENDER_INTERVAL:
+                    self.render_interval_timer = 0.0
+                    try:
+                        self.gui.render(self, reward=0)
+                    except Exception as e:
+                        print(f"Error during GUI render: {e}")
+                        if self.test_gui:
+                            self.gui.close()
+                        break
 
             agent_path.append(self.agent_body.position)
 

@@ -1,10 +1,19 @@
-from continuous_environment import ContinuousEnvironment, AgentState, AgentSensor, RaySensor, RaySensorNoType
+from continuous_environment import ContinuousEnvironment, AgentState, RaySensorNoType
 import argparse
 import sys
 import numpy as np
 import ast
 import json
 import os
+from tqdm import tqdm
+
+def v_print(text: str, verbose: bool):
+    """
+    Verbose print function.
+    only if verbose is True, print the text.
+    """
+    if verbose:
+        print(text)
 
 try:
     from agents.dqn import DQNAgent
@@ -77,23 +86,23 @@ def main(args):
 
         sensors = [
             # RaySensorNoType(ray_angle=0, ray_length=1000),
-            RaySensorNoType(ray_angle=0, ray_length=600),
-            RaySensorNoType(ray_angle=np.pi * 0.5, ray_length=600),
-            RaySensorNoType(ray_angle=np.pi * -0.5, ray_length=600),
-            RaySensorNoType(ray_angle=np.pi, ray_length=600),
+            RaySensorNoType(ray_angle=0, ray_length=600, verbose=args.verbose),
+            RaySensorNoType(ray_angle=np.pi * 0.5, ray_length=600, verbose=args.verbose),
+            RaySensorNoType(ray_angle=np.pi * -0.5, ray_length=600, verbose=args.verbose),
+            RaySensorNoType(ray_angle=np.pi, ray_length=600, verbose=args.verbose),
 
-            RaySensorNoType(ray_angle=np.pi * 1.25, ray_length=600),
-            RaySensorNoType(ray_angle=np.pi * 0.75, ray_length=600),
-            RaySensorNoType(ray_angle=np.pi * 0.25, ray_length=600),
-            RaySensorNoType(ray_angle=np.pi * 1.75, ray_length=600),
+            RaySensorNoType(ray_angle=np.pi * 1.25, ray_length=600, verbose=args.verbose),
+            RaySensorNoType(ray_angle=np.pi * 0.75, ray_length=600, verbose=args.verbose),
+            RaySensorNoType(ray_angle=np.pi * 0.25, ray_length=600, verbose=args.verbose),
+            RaySensorNoType(ray_angle=np.pi * 1.75, ray_length=600, verbose=args.verbose),
 
         ]
     )
-    print("Agent State space is size: ", agent_state.size())
+    v_print(f"Agent State space is size: {agent_state.size()}", args.verbose)
 
     try:
-        env = ContinuousEnvironment.load_from_file(args.level_file, agent_state=agent_state, use_gui=args.use_gui)
-        print(f"Environment loaded successfully from {args.level_file}.json")
+        env = ContinuousEnvironment.load_from_file(args.level_file, agent_state=agent_state, train_gui=args.train_gui, test_gui=args.test_gui)
+        v_print(f"Environment loaded successfully from {args.level_file}.json", args.verbose)
     except FileNotFoundError:
         print(f"Error: {args.level_file}.json not found.")
         sys.exit(1)
@@ -140,11 +149,16 @@ def main(args):
 def dqn_agent(agent, args, env, max_steps_per_episode, start_position, episode_metrics, results_path):
     
     step_idx = 0
-    for episode in range(args.num_episodes):
-        print(f"\n--- Episode {episode + 1} / {args.num_episodes} ---")
-        print(f"Agent Epsilon: {agent.epsilon:.4f}")
+    episode_range = range(args.num_episodes)
+    if not args.verbose:
+        episode_range = tqdm(episode_range, desc=f"Training agent")
+        episode_range.set_postfix({'eps': round(agent.epsilon, 3)})
+    
+    for episode in episode_range:
+        v_print(f"\n--- Episode {episode + 1} / {args.num_episodes} ---", args.verbose)
+        v_print(f"Agent Epsilon: {agent.epsilon:.4f}", args.verbose)
         continuous_state = env.reset()
-        if env.use_gui:
+        if env.train_gui:
             env.gui.reset()
         done = False
         td_losses = []
@@ -157,10 +171,10 @@ def dqn_agent(agent, args, env, max_steps_per_episode, start_position, episode_m
             if action not in [0,1,2,3]:
                 break
             try:
-                next_state, done = env.step(action)
+                next_state, done = env.step(action, render=env.train_gui)
             except Exception as e:
                 print(f"Error during env.step(): {e}")
-                if env.use_gui:
+                if env.train_gui:
                     env.gui.close()
                 sys.exit(1)
 
@@ -180,10 +194,13 @@ def dqn_agent(agent, args, env, max_steps_per_episode, start_position, episode_m
                 break
 
         agent.update_epsilon()
+
         if done:
-            print(f"Episode finished after {env_step_idx + 1} steps.")
+            v_print(f"Episode finished after {env_step_idx + 1} steps.", args.verbose)
         else:
-            print(f"Episode reached max steps ({max_steps_per_episode}).")
+            v_print(f"Episode reached max steps ({max_steps_per_episode}).", args.verbose)
+        if not args.verbose:
+            episode_range.set_postfix({'eps': round(agent.epsilon, 3)})
         
         # ---- Log episode metrics ----
         avg_td_loss = np.mean(td_losses) if td_losses else None
@@ -197,26 +214,36 @@ def dqn_agent(agent, args, env, max_steps_per_episode, start_position, episode_m
 
         with open(results_path, "w") as f:
             json.dump(episode_metrics, f, indent=2)
-        print("\nEpisode metrics saved to training_metrics.json")
-    
-    if env.use_gui:
-        env.gui.close()
-    print("\nTraining is finished")
 
-    print("\nStarting evaluation...")
+        v_print("\nEpisode metrics saved to training_metrics.json", args.verbose)
+    
+    if env.train_gui and not env.test_gui:
+        env.gui.close()
+
+    v_print("\nTraining is finished", args.verbose)
+
+    v_print("\nStarting evaluation...", args.verbose)
+
     env.evaluate_agent(agent=agent,
                        max_steps=max_steps_per_episode,
                        agent_start_pos=None,
                        random_seed=42,
                        file_prefix="post_training_eval_dqn")
+    
+    if env.test_gui:
+        env.gui.close()
 
 def ppo_agent(agent, args, env, max_steps_per_episode, start_position, episode_metrics, results_path):
 
     step_idx = 0
-    for episode in range(args.num_episodes):
-        print(f"\n--- Episode {episode + 1} / {args.num_episodes} ---")
+    episode_range = range(args.num_episodes)
+    if not args.verbose:
+        episode_range = tqdm(episode_range, desc="Training agent")
+    
+    for episode in episode_range:
+        v_print(f"\n--- Episode {episode + 1} / {args.num_episodes} ---", args.verbose)
         continuous_state = env.reset()
-        if env.use_gui:
+        if env.train_gui:
             env.gui.reset()
         done = False
 
@@ -229,10 +256,10 @@ def ppo_agent(agent, args, env, max_steps_per_episode, start_position, episode_m
 
             action, log_prob, value = agent.select_action(continuous_state)
             try:
-                next_state, done = env.step(action)
+                next_state, done = env.step(action, render=env.train_gui)
             except Exception as e:
                 print(f"Error during env.step(): {e}")
-                if env.use_gui:
+                if env.train_gui:
                     env.gui.close()
                 sys.exit(1)
 
@@ -251,7 +278,7 @@ def ppo_agent(agent, args, env, max_steps_per_episode, start_position, episode_m
 
             continuous_state = next_state
 
-        print(f"Episode ended after {episode_steps} steps.")
+        v_print(f"Episode ended after {episode_steps} steps.", args.verbose)
 
         # ---- PPO Learning Step ----
         metrics = agent.learn()  # returns a dictionary of losses
@@ -276,13 +303,15 @@ def ppo_agent(agent, args, env, max_steps_per_episode, start_position, episode_m
         with open(results_path, "w") as f:
             json.dump(episode_metrics, f, indent=2)
 
-        print("Episode metrics saved to training_metrics.json")
+        v_print("Episode metrics saved to training_metrics.json", args.verbose)
 
-    if env.use_gui:
+    if env.train_gui and not env.test_gui:
         env.gui.close()
-    print("\nTraining is finished")
 
-    print("\nStarting evaluation...")
+    v_print("\nTraining is finished", args.verbose)
+
+    v_print("\nStarting evaluation...", args.verbose)
+
     env.evaluate_agent(
         agent=agent,
         max_steps=max_steps_per_episode,
@@ -290,6 +319,9 @@ def ppo_agent(agent, args, env, max_steps_per_episode, start_position, episode_m
         random_seed=42,
         file_prefix="post_training_eval_ppo"
     )
+    
+    if env.test_gui:
+        env.gui.close()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run a continuous environment simulation.")
@@ -299,8 +331,12 @@ if __name__ == "__main__":
                         help="Number of episodes to run. Default: 50")
     parser.add_argument("--max_steps", type=int, default=1000,
                         help="Maximum steps per episode. Default: 1000")
-    parser.add_argument("--use-gui", action="store_true",
+    parser.add_argument("--train-gui", action="store_true",
                         help="Run the simulation with the GUI.")
+    parser.add_argument("--test-gui", action="store_true",
+                        help="Only enable GUI during evaluation phase.")
+    parser.add_argument("--verbose", action="store_true",
+                        help="Print detailed training information.")
     parser.add_argument("--agent", type=str, default="dqn", choices=["dqn", "ppo"],
                         help="Type of agent to use. Default: random")
     parser.add_argument("--gamma", type=float, default=0.99, help="Discount factor gamma.")
