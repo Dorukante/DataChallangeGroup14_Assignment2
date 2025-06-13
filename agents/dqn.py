@@ -13,10 +13,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from agents.buffer import Buffer, Transition
-from collections import deque
 import random
-import numpy as np
-from typing import Tuple, Any, Optional
+from typing import Any, Optional
 
 
 # ----- DQN Model -----
@@ -61,6 +59,7 @@ class DQNAgent:
         epsilon_start (float, optional): Initial value for epsilon. Defaults to 1.0.
         epsilon_end (float, optional): Minimum value for epsilon. Defaults to 0.01.
         epsilon_decay (float, optional): Decay rate for epsilon. Defaults to 0.995.
+        tau (float, optional): Soft update parameter. Defaults to 0.005.
     """
     def __init__(
             self, 
