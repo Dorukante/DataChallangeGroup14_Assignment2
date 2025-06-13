@@ -310,7 +310,6 @@ if __name__ == "__main__":
     parser.add_argument("--epsilon_start", type=float, default=1.0, help="Initial value for epsilon")
     parser.add_argument("--epsilon_end", type=float, default=0.01, help="Minimum value for epsilon")
     parser.add_argument("--epsilon_decay", type=float, default=0.95, help=" Decay rate for epsilon")
-    parser.add_argument("--state_dim", type=int, default=0.995, help="  Dimensionality of the state space.")
     parser.add_argument("--hidden_dim", type=int, default=128, help=" Number of units in hidden layers of the DQN")
     parser.add_argument("--position", type=str, default="(3,11)", help="Start position of the agent")
     parser.add_argument("--lamda", type=float, default=0.95, help=" λ for Generalized Advantage Estimation")
@@ -321,4 +320,3 @@ if __name__ == "__main__":
     args = parser.parse_args()
     start_position = ast.literal_eval(args.position)
     main(args)
-# end of new code
