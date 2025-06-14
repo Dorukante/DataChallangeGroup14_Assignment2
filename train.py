@@ -25,12 +25,12 @@ except ImportError:
 def reward_func(env, state, action, next_state, done):
     goal_positions = list(env.current_goals.keys())
     if not goal_positions:
-        return 100.0
+        return 150.0
 
-    progress_reward = np.tanh(env.progress_to_goal * 0.01)
+    progress_reward = np.tanh(env.progress_to_goal * 0.05)
     collisions_this_step = env.agent_collided_with_obstacle_count_after - env.agent_collided_with_obstacle_count_before
 
-    return -0.5 + collisions_this_step + progress_reward * 5 \
+    return -0.5 + collisions_this_step + progress_reward * 10 
 
 
 def format_args_summary(agent_type: str, args) -> str:
@@ -146,30 +146,43 @@ def main(args):
         print(f"Error: Unknown agent type {args.agent}")
         sys.exit(1)
    
+import numpy as np
+import json
+from tqdm import tqdm
+import sys
+
 def dqn_agent(agent, args, env, max_steps_per_episode, start_position, episode_metrics, results_path):
-    
     step_idx = 0
     episode_range = range(args.num_episodes)
-    if not args.verbose:
-        episode_range = tqdm(episode_range, desc=f"Training agent")
-        episode_range.set_postfix({'eps': round(agent.epsilon, 3)})
     
+    # Setup tqdm progress bar if not verbose
+    if not args.verbose:
+        episode_range = tqdm(episode_range, desc="Training agent")
+        episode_range.set_postfix({'eps': round(agent.epsilon, 3)})
+
+    # Hyperparameters for batched learning
+    learn_every = 4            # How often to learn (every N env steps)
+    update_iterations = 2      # How many learn steps to perform each time
+
     for episode in episode_range:
-        v_print(f"\n--- Episode {episode + 1} / {args.num_episodes} ---", args.verbose)
-        v_print(f"Agent Epsilon: {agent.epsilon:.4f}", args.verbose)
+        if args.verbose:
+            print(f"\n--- Episode {episode + 1} / {args.num_episodes} ---")
+            print(f"Agent Epsilon: {agent.epsilon:.4f}")
+        
         continuous_state = env.reset()
         if env.train_gui:
             env.gui.reset()
         done = False
         td_losses = []
-
         total_reward = 0.0
+
         for env_step_idx in range(max_steps_per_episode):
             step_idx += 1
-            # better use this to track steps instead of env_step_idx for low stepcount episodes
+
             action = agent.select_action(continuous_state)
-            if action not in [0,1,2,3]:
+            if action not in [0, 1, 2, 3]:
                 break
+
             try:
                 next_state, done = env.step(action, render=env.train_gui)
             except Exception as e:
@@ -182,9 +195,15 @@ def dqn_agent(agent, args, env, max_steps_per_episode, start_position, episode_m
             total_reward += reward
 
             agent.store_experience(continuous_state, action, reward, next_state, done)
-            loss = agent.learn()
-            if loss is not None:
-                td_losses.append(loss)
+
+            # Only learn every `learn_every` steps
+            if step_idx % learn_every == 0:
+                for _ in range(update_iterations):
+                    loss = agent.learn()
+                    if loss is not None:
+                        td_losses.append(loss)
+
+            # Periodically update target network
             if step_idx % 50 == 0:
                 agent.update_target_network()
 
@@ -193,16 +212,18 @@ def dqn_agent(agent, args, env, max_steps_per_episode, start_position, episode_m
             if done:
                 break
 
+        # Decay epsilon after each episode
         agent.update_epsilon()
 
-        if done:
-            v_print(f"Episode finished after {env_step_idx + 1} steps.", args.verbose)
+        if args.verbose:
+            if done:
+                print(f"Episode finished after {env_step_idx + 1} steps.")
+            else:
+                print(f"Episode reached max steps ({max_steps_per_episode}).")
         else:
-            v_print(f"Episode reached max steps ({max_steps_per_episode}).", args.verbose)
-        if not args.verbose:
             episode_range.set_postfix({'eps': round(agent.epsilon, 3)})
-        
-        # ---- Log episode metrics ----
+
+        # Log episode metrics
         avg_td_loss = np.mean(td_losses) if td_losses else None
         episode_metrics.append({
             "episode": episode + 1,
@@ -212,17 +233,20 @@ def dqn_agent(agent, args, env, max_steps_per_episode, start_position, episode_m
             "avg_td_loss": avg_td_loss,
         })
 
-        with open(results_path, "w") as f:
-            json.dump(episode_metrics, f, indent=2)
+        # Write metrics to JSON every 10 episodes
+        if (episode + 1) % 10 == 0:
+            with open(results_path, "w") as f:
+                json.dump(episode_metrics, f, indent=2)
 
-        v_print("\nEpisode metrics saved to training_metrics.json", args.verbose)
-    
+    # Save final metrics once more after all episodes
+    with open(results_path, "w") as f:
+        json.dump(episode_metrics, f, indent=2)
+
     if env.train_gui and not env.test_gui:
         env.gui.close()
 
-    v_print("\nTraining is finished", args.verbose)
-
-    v_print("\nStarting evaluation...", args.verbose)
+    if args.verbose:
+        print("\nTraining is finished\nStarting evaluation...")
 
     env.evaluate_agent(agent=agent,
                        max_steps=max_steps_per_episode,
@@ -233,28 +257,28 @@ def dqn_agent(agent, args, env, max_steps_per_episode, start_position, episode_m
     if env.test_gui:
         env.gui.close()
 
-def ppo_agent(agent, args, env, max_steps_per_episode, start_position, episode_metrics, results_path):
 
-    step_idx = 0
+def ppo_agent(agent, args, env, max_steps_per_episode, start_position, episode_metrics, results_path):
     episode_range = range(args.num_episodes)
     if not args.verbose:
         episode_range = tqdm(episode_range, desc="Training agent")
-    
+
     for episode in episode_range:
-        v_print(f"\n--- Episode {episode + 1} / {args.num_episodes} ---", args.verbose)
+        if args.verbose and (episode+1) % 10 == 0:
+            print(f"Episode {episode+1}/{args.num_episodes}")
+
         continuous_state = env.reset()
         if env.train_gui:
             env.gui.reset()
-        done = False
 
+        done = False
         total_reward = 0.0
         episode_steps = 0
 
         while not done and episode_steps < max_steps_per_episode:
-            step_idx += 1
             episode_steps += 1
-
             action, log_prob, value = agent.select_action(continuous_state)
+
             try:
                 next_state, done = env.step(action, render=env.train_gui)
             except Exception as e:
@@ -278,18 +302,15 @@ def ppo_agent(agent, args, env, max_steps_per_episode, start_position, episode_m
 
             continuous_state = next_state
 
-        v_print(f"Episode ended after {episode_steps} steps.", args.verbose)
+        # PPO Learning Step
+        metrics = agent.learn()
 
-        # ---- PPO Learning Step ----
-        metrics = agent.learn()  # returns a dictionary of losses
-
-        # Fallback if learn() returns None
+        # Metrics extraction (with safe fallback)
         policy_loss = metrics.get("policy_loss") if metrics else None
         value_loss = metrics.get("value_loss") if metrics else None
         entropy = metrics.get("entropy") if metrics else None
         total_loss = metrics.get("total_loss") if metrics else None
 
-        # ---- Log episode metrics ----
         episode_metrics.append({
             "episode": episode + 1,
             "avg_reward_per_step": total_reward / episode_steps,
@@ -300,26 +321,27 @@ def ppo_agent(agent, args, env, max_steps_per_episode, start_position, episode_m
             "total_loss": total_loss,
         })
 
-        with open(results_path, "w") as f:
-            json.dump(episode_metrics, f, indent=2)
+        # Save metrics every 10 episodes
+        if (episode + 1) % 10 == 0:
+            with open(results_path, "w") as f:
+                json.dump(episode_metrics, f, indent=2)
 
-        v_print("Episode metrics saved to training_metrics.json", args.verbose)
+    # Save final metrics
+    with open(results_path, "w") as f:
+        json.dump(episode_metrics, f, indent=2)
 
     if env.train_gui and not env.test_gui:
         env.gui.close()
 
-    v_print("\nTraining is finished", args.verbose)
+    if args.verbose:
+        print("\nTraining is finished\nStarting evaluation...")
 
-    v_print("\nStarting evaluation...", args.verbose)
+    env.evaluate_agent(agent=agent,
+                       max_steps=max_steps_per_episode,
+                       agent_start_pos=None,
+                       random_seed=42,
+                       file_prefix="post_training_eval_ppo")
 
-    env.evaluate_agent(
-        agent=agent,
-        max_steps=max_steps_per_episode,
-        agent_start_pos=None,
-        random_seed=42,
-        file_prefix="post_training_eval_ppo"
-    )
-    
     if env.test_gui:
         env.gui.close()
 
@@ -327,9 +349,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run a continuous environment simulation.")
     parser.add_argument("--level_file", type=str, default="level_1",
                         help="Name of the level JSON file (without .json extension) to load. Default: level_1")
-    parser.add_argument("--num_episodes", type=int, default=50,
+    parser.add_argument("--num_episodes", type=int, default=300,
                         help="Number of episodes to run. Default: 50")
-    parser.add_argument("--max_steps", type=int, default=1000,
+    parser.add_argument("--max_steps", type=int, default=3000,
                         help="Maximum steps per episode. Default: 1000")
     parser.add_argument("--train-gui", action="store_true",
                         help="Run the simulation with the GUI.")
@@ -340,18 +362,18 @@ if __name__ == "__main__":
     parser.add_argument("--agent", type=str, default="dqn", choices=["dqn", "ppo"],
                         help="Type of agent to use. Default: random")
     parser.add_argument("--gamma", type=float, default=0.99, help="Discount factor gamma.")
-    parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate")
+    parser.add_argument("--lr", type=float, default=3e-4, help="Learning rate")
     parser.add_argument("--buffer", type=int, default=10000, help="Maximum capacity of the replay buffer")
-    parser.add_argument("--batch", type=int, default=64, help="Batch size for learning")
+    parser.add_argument("--batch", type=int, default=256, help="Batch size for learning")
     parser.add_argument("--epsilon_start", type=float, default=1.0, help="Initial value for epsilon")
-    parser.add_argument("--epsilon_end", type=float, default=0.01, help="Minimum value for epsilon")
+    parser.add_argument("--epsilon_end", type=float, default=0.001, help="Minimum value for epsilon")
     parser.add_argument("--epsilon_decay", type=float, default=0.95, help=" Decay rate for epsilon")
-    parser.add_argument("--hidden_dim", type=int, default=128, help=" Number of units in hidden layers of the DQN")
+    parser.add_argument("--hidden_dim", type=int, default=256, help=" Number of units in hidden layers of the DQN")
     parser.add_argument("--position", type=str, default="(3,11)", help="Start position of the agent")
     parser.add_argument("--lamda", type=float, default=0.95, help=" λ for Generalized Advantage Estimation")
     parser.add_argument("--clip_eps", type=float, default=0.2, help=" PPO Clipping Parameter")
-    parser.add_argument("--ppo_epochs", type=int, default=4, help="Number of PPO Update Epochs per Rollout")
-    parser.add_argument("--entropy_coeff", type=float, default=0.01, help="Entropy Coefficient")
+    parser.add_argument("--ppo_epochs", type=int, default=6, help="Number of PPO Update Epochs per Rollout")
+    parser.add_argument("--entropy_coeff", type=float, default=0.003, help="Entropy Coefficient")
 
     args = parser.parse_args()
     start_position = ast.literal_eval(args.position)

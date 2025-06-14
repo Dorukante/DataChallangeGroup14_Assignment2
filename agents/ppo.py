@@ -29,16 +29,26 @@ class ActorCritic(nn.Module):
             nn.Linear(state_dim, hidden_dim),
             nn.LayerNorm(hidden_dim),
             nn.ReLU(),
-            nn.Linear(hidden_dim, hidden_dim),  # Optional
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.LayerNorm(hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
             nn.LayerNorm(hidden_dim),
             nn.ReLU()
         )
 
         self.actor = nn.Sequential(
-            nn.Linear(hidden_dim, action_dim),
+            nn.Linear(hidden_dim, hidden_dim // 2),
+            nn.ReLU(),
+            nn.Linear(hidden_dim // 2, action_dim),
             nn.Softmax(dim=-1)
         )
-        self.critic = nn.Linear(hidden_dim, 1)
+
+        self.critic = nn.Sequential(
+            nn.Linear(hidden_dim, hidden_dim // 2),
+            nn.ReLU(),
+            nn.Linear(hidden_dim // 2, 1)
+)
 
     def forward(self, x):
         x = self.fc(x)
@@ -140,12 +150,12 @@ class PPOAgent(DQNAgent):
             log_prob (float): Log probability of the taken action.
             value (float): Estimated state value.
         """
-        self.reward_mean = (1 - self.reward_alpha) * self.reward_mean + self.reward_alpha * reward
-        self.reward_var = (1 - self.reward_alpha) * self.reward_var + self.reward_alpha * ((reward - self.reward_mean) ** 2)
-        reward_normalized = (reward - self.reward_mean) / (np.sqrt(self.reward_var) + 1e-8)
+        # self.reward_mean = (1 - self.reward_alpha) * self.reward_mean + self.reward_alpha * reward
+        # self.reward_var = (1 - self.reward_alpha) * self.reward_var + self.reward_alpha * ((reward - self.reward_mean) ** 2)
+        # reward_normalized = (reward - self.reward_mean) / (np.sqrt(self.reward_var) + 1e-8)
 
         # Store normalized reward
-        self.buffer.add(PPOTransition(state, action, reward_normalized, next_state, done, log_prob, value))
+        self.buffer.add(PPOTransition(state, action, reward, next_state, done, log_prob, value))
 
     def compute_gae(self, rewards, values, dones, next_value):
         """
@@ -178,52 +188,71 @@ class PPOAgent(DQNAgent):
         return advantages, returns
 
     def learn(self) -> Optional[Dict[str, float]]:
-        """Performs PPO update using collected trajectories."""
+        """
+        Performs PPO update using collected trajectories.
+
+        Returns:
+            Optional[Dict[str, float]]: Logging dictionary with policy loss, value loss, entropy and total loss.
+        """
+
         if self.buffer.is_empty():
             return None
 
-        # Get batch data using our new Buffer system
+        # Retrieve collected batch data from on-policy buffer
         states, actions, rewards, next_states, dones, log_probs_old, values = self.buffer.get_batch()
 
         # Estimate value of the final state for bootstrapping
         with torch.no_grad():
             _, next_value = self.policy(next_states[-1].unsqueeze(0))
             next_value = next_value.item()
-        
-        # Compute advantages and returns
+
+        # Compute GAE advantages and returns
         advantages, returns = self.compute_gae(rewards, values, dones, next_value)
+        # Normalize advantages to stabilize policy updates
         advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
-        
+
         total_policy_loss, total_value_loss, total_entropy = 0.0, 0.0, 0.0
 
         for _ in range(self.epochs):
-            # Forward pass
+            # Forward pass through policy network to get updated action distributions and value estimates
             probs, values_pred = self.policy(states)
             dist = torch.distributions.Categorical(probs)
             log_probs = dist.log_prob(actions)
             entropy = dist.entropy().mean()
 
-            # Compute policy loss
+            # Calculate PPO clipped policy objective (actor loss)
             ratio = torch.exp(log_probs - log_probs_old)
             surr1 = ratio * advantages
             surr2 = torch.clamp(ratio, 1 - self.clip_epsilon, 1 + self.clip_epsilon) * advantages
             actor_loss = -torch.min(surr1, surr2).mean()
 
-            # Compute value loss
             values_pred = values_pred.squeeze()
-            values_clipped = values + (values_pred - values).clamp(-self.clip_epsilon, self.clip_epsilon)
-            value_loss_1 = (values_pred - returns).pow(2)
-            value_loss_2 = (values_clipped - returns).pow(2)
-            critic_loss = torch.max(value_loss_1, value_loss_2).mean()
+            values_old = values.detach()
+
+            # Normalize returns and values for stable critic updates
+            ret_mean = returns.mean()
+            ret_std = returns.std() + 1e-8
+
+            returns_norm = (returns - ret_mean) / ret_std
+            values_pred_norm = (values_pred - ret_mean) / ret_std
+            values_old_norm = (values_old - ret_mean) / ret_std
+
+            # Value function clipping (PPO style)
+            value_clip_eps = 0.2  # can be tuned
+
+            values_clipped = values_old_norm + (values_pred_norm - values_old_norm).clamp(-value_clip_eps, value_clip_eps)
+
+            value_loss_unclipped = (values_pred_norm - returns_norm).pow(2)
+            value_loss_clipped = (values_clipped - returns_norm).pow(2)
+            critic_loss = 0.5 * torch.max(value_loss_unclipped, value_loss_clipped).mean()
 
             # Total loss
-            loss = actor_loss + 0.5 * critic_loss - self.entropy_coeff * entropy
+            loss = actor_loss + critic_loss - self.entropy_coeff * entropy
 
-            # Optimize
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
-            
+
             total_policy_loss += actor_loss.item()
             total_value_loss += critic_loss.item()
             total_entropy += entropy.item()
@@ -234,5 +263,5 @@ class PPOAgent(DQNAgent):
             "policy_loss": total_policy_loss / self.epochs,
             "value_loss": total_value_loss / self.epochs,
             "entropy": total_entropy / self.epochs,
-            "total_loss": (total_policy_loss + 0.5 * total_value_loss - self.entropy_coeff * total_entropy) / self.epochs
+            "total_loss": (total_policy_loss + total_value_loss - self.entropy_coeff * total_entropy) / self.epochs
         }
