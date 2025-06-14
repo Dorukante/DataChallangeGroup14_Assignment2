@@ -28,15 +28,15 @@ class DQN(nn.Module):
         action_dim (int): Number of possible actions.
         hidden_dim (int, optional): Number of units in each hidden layer. Defaults to 128.
     """
-    def __init__(self, state_dim: int, action_dim: int, hidden_dim: int = 128):
+    def __init__(self, state_dim: int, action_dim: int, hidden_dim: int = 256):
         super(DQN, self).__init__()
         self.fc1 = nn.Linear(state_dim, hidden_dim)
         self.ln1 = nn.LayerNorm(hidden_dim)
         self.fc2 = nn.Linear(hidden_dim, hidden_dim)
         self.ln2 = nn.LayerNorm(hidden_dim)
-        self.fc3 = nn.Linear(hidden_dim, hidden_dim//2)
-        self.ln3 = nn.LayerNorm(hidden_dim//2)
-        self.out = nn.Linear(hidden_dim//2, action_dim)
+        self.fc3 = nn.Linear(hidden_dim, hidden_dim)
+        self.ln3 = nn.LayerNorm(hidden_dim)
+        self.out = nn.Linear(hidden_dim, action_dim)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = F.relu(self.ln1(self.fc1(x)))
@@ -72,7 +72,8 @@ class DQNAgent:
             lr: float = 1e-3, 
             epsilon_start: float = 1.0,
             epsilon_end: float = 0.01, 
-            epsilon_decay: float = 0.995
+            epsilon_decay: float = 0.995,
+            tau: float=0.01
         ):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -91,6 +92,7 @@ class DQNAgent:
 
         self.optimizer = optim.Adam(self.q_network.parameters(), lr=lr)
         self.buffer = Buffer(self.device, buffer_capacity)
+        self.tau = tau
 
     def select_action(self, state: Any, greedy: bool = False) -> int:
         """Selects an action using an epsilon-greedy policy.
@@ -108,7 +110,7 @@ class DQNAgent:
             return random.randint(0, self.action_dim - 1)  # Explore
         else:
             with torch.no_grad():
-                state_tensor = torch.FloatTensor(state).unsqueeze(0).to(self.device)
+                state_tensor = torch.as_tensor(state, dtype=torch.float32, device=self.device).unsqueeze(0)
                 q_values = self.q_network(state_tensor)
                 return q_values.argmax().item()  # Exploit
 
@@ -141,8 +143,7 @@ class DQNAgent:
             max_q_s_next = self.target_network(s_next).max(1)[0]
             target_q_sa = r + self.gamma * max_q_s_next * (1 - done)
 
-        # Loss: (target - prediction)^2
-        loss = F.mse_loss(q_sa, target_q_sa)
+        loss = F.smooth_l1_loss(q_sa, target_q_sa)
         return loss
 
     def learn(self) -> Optional[float]:
@@ -164,10 +165,12 @@ class DQNAgent:
         # Optimize the model
         self.optimizer.zero_grad()
         loss.backward()
+        torch.nn.utils.clip_grad_norm_(self.q_network.parameters(), max_norm=1.0)
         self.optimizer.step()
 
         return loss.item()
 
     def update_target_network(self) -> None:
         """Updates the target Q-network."""
-        self.target_network.load_state_dict(self.q_network.state_dict())
+        for target_param, param in zip(self.target_network.parameters(), self.q_network.parameters()):
+            target_param.data.copy_(self.tau * param.data + (1.0 - self.tau) * target_param.data)

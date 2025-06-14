@@ -146,11 +146,6 @@ def main(args):
         print(f"Error: Unknown agent type {args.agent}")
         sys.exit(1)
    
-import numpy as np
-import json
-from tqdm import tqdm
-import sys
-
 def dqn_agent(agent, args, env, max_steps_per_episode, start_position, episode_metrics, results_path):
     step_idx = 0
     episode_range = range(args.num_episodes)
@@ -160,9 +155,6 @@ def dqn_agent(agent, args, env, max_steps_per_episode, start_position, episode_m
         episode_range = tqdm(episode_range, desc="Training agent")
         episode_range.set_postfix({'eps': round(agent.epsilon, 3)})
 
-    # Hyperparameters for batched learning
-    learn_every = 4            # How often to learn (every N env steps)
-    update_iterations = 2      # How many learn steps to perform each time
 
     for episode in episode_range:
         if args.verbose:
@@ -176,39 +168,26 @@ def dqn_agent(agent, args, env, max_steps_per_episode, start_position, episode_m
         td_losses = []
         total_reward = 0.0
 
+        learn_every = 4
+
         for env_step_idx in range(max_steps_per_episode):
             step_idx += 1
-
             action = agent.select_action(continuous_state)
-            if action not in [0, 1, 2, 3]:
-                break
-
-            try:
-                next_state, done = env.step(action, render=env.train_gui)
-            except Exception as e:
-                print(f"Error during env.step(): {e}")
-                if env.train_gui:
-                    env.gui.close()
-                sys.exit(1)
-
+            next_state, done = env.step(action, render=env.train_gui)
             reward = reward_func(env, continuous_state, action, next_state, done)
-            total_reward += reward
-
             agent.store_experience(continuous_state, action, reward, next_state, done)
 
-            # Only learn every `learn_every` steps
-            if step_idx % learn_every == 0:
-                for _ in range(update_iterations):
-                    loss = agent.learn()
-                    if loss is not None:
-                        td_losses.append(loss)
+            total_reward += reward
 
-            # Periodically update target network
+            if step_idx % learn_every == 0:
+                loss = agent.learn()
+                if loss is not None:
+                    td_losses.append(loss)
+
             if step_idx % 50 == 0:
                 agent.update_target_network()
 
             continuous_state = next_state
-
             if done:
                 break
 
@@ -367,7 +346,7 @@ if __name__ == "__main__":
     parser.add_argument("--batch", type=int, default=256, help="Batch size for learning")
     parser.add_argument("--epsilon_start", type=float, default=1.0, help="Initial value for epsilon")
     parser.add_argument("--epsilon_end", type=float, default=0.001, help="Minimum value for epsilon")
-    parser.add_argument("--epsilon_decay", type=float, default=0.95, help=" Decay rate for epsilon")
+    parser.add_argument("--epsilon_decay", type=float, default=0.98, help=" Decay rate for epsilon")
     parser.add_argument("--hidden_dim", type=int, default=256, help=" Number of units in hidden layers of the DQN")
     parser.add_argument("--position", type=str, default="(3,11)", help="Start position of the agent")
     parser.add_argument("--lamda", type=float, default=0.95, help=" λ for Generalized Advantage Estimation")
