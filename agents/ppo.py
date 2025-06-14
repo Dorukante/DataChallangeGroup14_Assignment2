@@ -238,7 +238,7 @@ class PPOAgent(DQNAgent):
             values_old_norm = (values_old - ret_mean) / ret_std
 
             # Value function clipping (PPO style)
-            value_clip_eps = 0.2  # can be tuned
+            value_clip_eps = 0.2  
 
             values_clipped = values_old_norm + (values_pred_norm - values_old_norm).clamp(-value_clip_eps, value_clip_eps)
 
