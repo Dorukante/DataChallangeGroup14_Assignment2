@@ -4,8 +4,6 @@ Deep Q-Network (DQN) implementation.
 This module provides the components for building and training a DQN agent,
 including the Q-network model, a replay buffer, and the agent class itself.
 
-1) TODO IMPROVE THE MODEL
-2) TODO DEFINE RL METRICS THAT ARE SUITABLE FOR EVALUATION
 """
 
 import torch
@@ -15,7 +13,6 @@ import torch.optim as optim
 from agents.buffer import Buffer, Transition
 import random
 from typing import Any, Optional
-
 
 # ----- DQN Model -----
 class DQN(nn.Module):
@@ -59,7 +56,7 @@ class DQNAgent:
         epsilon_start (float, optional): Initial value for epsilon. Defaults to 1.0.
         epsilon_end (float, optional): Minimum value for epsilon. Defaults to 0.01.
         epsilon_decay (float, optional): Decay rate for epsilon. Defaults to 0.995.
-        tau (float, optional): Soft update parameter. Defaults to 0.005.
+        tau (float, optional): Soft update parameter. Defaults to 0.01
     """
     def __init__(
             self, 

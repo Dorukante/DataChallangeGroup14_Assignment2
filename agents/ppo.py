@@ -8,20 +8,22 @@ from typing import Tuple, Optional, Dict, Union
 
 class ActorCritic(nn.Module):
     """
-    Actor-Critic network used in PPO.
+    Actor-Critic network used in PPO. It has a shared feature extractor (MLP),
+    followed by separate actor (policy) and critic (value) heads.
 
     Attributes:
-        actor (nn.Sequential): Outputs action probabilities.
-        critic (nn.Linear): Outputs state value estimate.
+        actor (nn.Sequential): Outputs action probabilities (policy head).
+        critic (nn.Sequential): Outputs state value estimate (value head).
     """
+
     def __init__(self, state_dim, action_dim, hidden_dim=128):
         """
         Initializes the Actor-Critic network.
 
         Args:
-            state_dim (int): Dimension of the input state.
-            action_dim (int): Number of possible actions.
-            hidden_dim (int): Size of the hidden layer.
+            state_dim (int): Dimension of input state.
+            action_dim (int): Number of discrete actions.
+            hidden_dim (int, optional): Size of hidden layers. Defaults to 128.
         """
         super(ActorCritic, self).__init__()
 
@@ -51,6 +53,16 @@ class ActorCritic(nn.Module):
 )
 
     def forward(self, x):
+        """
+        Forward pass through shared layers, policy head, and value head.
+
+        Args:
+            x (torch.Tensor): Input state tensor of shape (batch_size, state_dim).
+
+        Returns:
+            Tuple[torch.Tensor, torch.Tensor]: (policy distribution, value estimate)
+        """
+         
         x = self.fc(x)
         policy_dist = self.actor(x)
         value = self.critic(x)
@@ -59,9 +71,10 @@ class ActorCritic(nn.Module):
 
 class PPOAgent(DQNAgent):
     """
-    Proximal Policy Optimization (PPO) Agent extending DQNAgent for shared interface.
+    Proximal Policy Optimization (PPO) Agent extending DQNAgent interface.
 
-    PPO uses an actor-critic architecture and on-policy training.
+    PPO uses actor-critic architecture and generalized advantage estimation (GAE).
+    This class reuses parts of DQNAgent for interface consistency.
     """
     def __init__(self, 
                  state_dim: int, 
@@ -73,7 +86,8 @@ class PPOAgent(DQNAgent):
                  lam: float = 0.95, 
                  clip_eps: float = 0.2, 
                  entropy_coeff: float = 0.01, 
-                 epochs: int = 4
+                 epochs: int = 4, 
+                 kl: float = 0.01
     ):
         """
         Initializes the PPO agent.
@@ -89,6 +103,7 @@ class PPOAgent(DQNAgent):
             clip_eps (float): Clipping threshold for PPO.
             entropy_coeff (float): Entropy regularization coefficient.
             epochs (int): Number of PPO update epochs per batch.
+            kl (float): KL early stopping threshold
         """
         super().__init__(
             state_dim=state_dim, action_dim=action_dim, hidden_dim=hidden_dim,
@@ -104,22 +119,20 @@ class PPOAgent(DQNAgent):
         self.clip_epsilon = clip_eps
         self.entropy_coeff = entropy_coeff
         self.epochs = epochs
-        self.reward_mean = 0.0
-        self.reward_var = 1.0
-        self.reward_alpha = 0.01  # smoothing factor
+        self.target_kl = kl
+
 
     def select_action(self, state: np.ndarray, greedy: bool = False) -> Union[int, Tuple[int, float, float]]:
         """
-        Select an action using the current policy.
-        
+        Selects an action based on policy distribution.
+
         Args:
-            state (np.ndarray): Current environment state
-            greedy (bool, optional): If True, use deterministic policy. Defaults to False.
+            state (np.ndarray): Current state.
+            greedy (bool): If True, selects deterministic action (argmax).
 
         Returns:
-            Union[int, Tuple[int, float, float]]: 
-                If greedy=True: action index
-                If greedy=False: tuple of (action, log_prob, value)
+            If greedy=False: Tuple (action, log_prob, value)
+            If greedy=True: Integer action index
         """
         state_tensor = torch.FloatTensor(state).unsqueeze(0).to(self.device)
         with torch.no_grad():
@@ -139,39 +152,35 @@ class PPOAgent(DQNAgent):
                         next_state: np.ndarray, done: bool, log_prob: float, 
                         value: float) -> None:
         """
-        Store a single transition in the buffer.
-        
+        Stores transition in PPO on-policy buffer.
+
         Args:
-            state (np.ndarray): Current state.
+            state (np.ndarray): State at time t.
             action (int): Action taken.
             reward (float): Reward received.
             next_state (np.ndarray): Next state.
-            done (bool): Episode done flag.
-            log_prob (float): Log probability of the taken action.
-            value (float): Estimated state value.
+            done (bool): Terminal flag.
+            log_prob (float): Log probability of action.
+            value (float): Estimated value of state.
         """
-        # self.reward_mean = (1 - self.reward_alpha) * self.reward_mean + self.reward_alpha * reward
-        # self.reward_var = (1 - self.reward_alpha) * self.reward_var + self.reward_alpha * ((reward - self.reward_mean) ** 2)
-        # reward_normalized = (reward - self.reward_mean) / (np.sqrt(self.reward_var) + 1e-8)
 
-        # Store normalized reward
+        # Store reward
         self.buffer.add(PPOTransition(state, action, reward, next_state, done, log_prob, value))
 
     def compute_gae(self, rewards, values, dones, next_value):
         """
-        Computes Generalized Advantage Estimation (GAE) for trajectory using tensor operations. 
+        Computes Generalized Advantage Estimation (GAE) advantage and returns.
 
-        Using tensor operations increases performance by 2x.
-        
         Args:
-            rewards (torch.Tensor): Rewards.
-            values (torch.Tensor): Value estimates.
+            rewards (torch.Tensor): Collected rewards.
+            values (torch.Tensor): Predicted state values.
             dones (torch.Tensor): Done flags.
-            next_value (float): Value of final state.
+            next_value (float): Bootstrap value for final state.
 
         Returns:
-            Tuple[torch.Tensor, torch.Tensor]: Advantages and target returns.
+            Tuple[torch.Tensor, torch.Tensor]: (advantages, target returns)
         """
+
         # Compute deltas in one vectorized operation
         deltas = rewards + self.gamma * torch.cat([values[1:], torch.tensor([next_value], device=values.device)]) * (1 - dones) - values
         
@@ -189,10 +198,21 @@ class PPOAgent(DQNAgent):
 
     def learn(self) -> Optional[Dict[str, float]]:
         """
-        Performs PPO update using collected trajectories.
+        Performs PPO update based on collected trajectory.
+
+        - Uses clipped surrogate objective.
+        - Uses normalized GAE advantages.
+        - Includes entropy bonus.
+        - Uses value clipping for stable critic updates.
+        - KL divergence based early stopping inside epochs.
 
         Returns:
-            Optional[Dict[str, float]]: Logging dictionary with policy loss, value loss, entropy and total loss.
+            Optional[Dict[str, float]]: Training metrics including:
+                - policy_loss (float)
+                - value_loss (float)
+                - entropy (float)
+                - total_loss (float)
+                - early_stopping (Optional[str])
         """
 
         if self.buffer.is_empty():
@@ -212,24 +232,25 @@ class PPOAgent(DQNAgent):
         advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
 
         total_policy_loss, total_value_loss, total_entropy = 0.0, 0.0, 0.0
+        early_stopping_message = None
 
-        for _ in range(self.epochs):
-            # Forward pass through policy network to get updated action distributions and value estimates
+        for epoch in range(self.epochs):
+            # Forward pass through policy network
             probs, values_pred = self.policy(states)
             dist = torch.distributions.Categorical(probs)
             log_probs = dist.log_prob(actions)
             entropy = dist.entropy().mean()
 
-            # Calculate PPO clipped policy objective (actor loss)
+            # PPO clipped objective (actor loss)
             ratio = torch.exp(log_probs - log_probs_old)
             surr1 = ratio * advantages
             surr2 = torch.clamp(ratio, 1 - self.clip_epsilon, 1 + self.clip_epsilon) * advantages
             actor_loss = -torch.min(surr1, surr2).mean()
 
+            # Value function loss (exactly same as your code — keep as is)
             values_pred = values_pred.squeeze()
             values_old = values.detach()
 
-            # Normalize returns and values for stable critic updates
             ret_mean = returns.mean()
             ret_std = returns.std() + 1e-8
 
@@ -237,11 +258,8 @@ class PPOAgent(DQNAgent):
             values_pred_norm = (values_pred - ret_mean) / ret_std
             values_old_norm = (values_old - ret_mean) / ret_std
 
-            # Value function clipping (PPO style)
-            value_clip_eps = 0.2  
-
+            value_clip_eps = 0.2
             values_clipped = values_old_norm + (values_pred_norm - values_old_norm).clamp(-value_clip_eps, value_clip_eps)
-
             value_loss_unclipped = (values_pred_norm - returns_norm).pow(2)
             value_loss_clipped = (values_clipped - returns_norm).pow(2)
             critic_loss = 0.5 * torch.max(value_loss_unclipped, value_loss_clipped).mean()
@@ -253,9 +271,18 @@ class PPOAgent(DQNAgent):
             loss.backward()
             self.optimizer.step()
 
+            # Accumulate metrics:
             total_policy_loss += actor_loss.item()
             total_value_loss += critic_loss.item()
             total_entropy += entropy.item()
+
+            # KL-based early stopping:
+            with torch.no_grad():
+                approx_kl = (log_probs_old - log_probs).mean().item()
+
+            if approx_kl > 1.5 * self.target_kl:
+                early_stopping_message = f"Early stopping PPO update at epoch {epoch+1} due to KL={approx_kl:.5f}"
+                break
 
         self.buffer.clear()  # Clear on-policy buffer
 
@@ -263,5 +290,6 @@ class PPOAgent(DQNAgent):
             "policy_loss": total_policy_loss / self.epochs,
             "value_loss": total_value_loss / self.epochs,
             "entropy": total_entropy / self.epochs,
-            "total_loss": (total_policy_loss + total_value_loss - self.entropy_coeff * total_entropy) / self.epochs
+            "total_loss": (total_policy_loss + total_value_loss - self.entropy_coeff * total_entropy) / self.epochs,
+            "early_stopping": early_stopping_message
         }
