@@ -85,8 +85,7 @@ def main(args):
         #save the training metrices
         Helper.save_training_metrices(episode_metrics, results_path)
 
-        if args.verbose:
-            print("\nTraining is finished\nStarting evaluation...")
+        Helper.v_print("\nTraining is finished\nStarting evaluation...", args.verbose)
 
         #evaluate the agent
         env.evaluate_agent(agent=agent,
@@ -119,8 +118,7 @@ def main(args):
         #save the training metrices
         Helper.save_training_metrices(episode_metrics, results_path)
 
-        if args.verbose:
-            print("\nTraining is finished\nStarting evaluation...")
+        Helper.v_print("\nTraining is finished\nStarting evaluation...", args.verbose)
 
         #evaluate the agent
         env.evaluate_agent(agent=agent,
