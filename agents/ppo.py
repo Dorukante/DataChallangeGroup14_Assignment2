@@ -107,6 +107,8 @@ class PPOAgent(DQNAgent):
         self.reward_mean = 0.0
         self.reward_var = 1.0
         self.reward_alpha = 0.01  # smoothing factor
+        self.target_kl = 0.01
+
 
     def select_action(self, state: np.ndarray, greedy: bool = False) -> Union[int, Tuple[int, float, float]]:
         """
@@ -212,24 +214,25 @@ class PPOAgent(DQNAgent):
         advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
 
         total_policy_loss, total_value_loss, total_entropy = 0.0, 0.0, 0.0
+        early_stopping_message = None
 
-        for _ in range(self.epochs):
-            # Forward pass through policy network to get updated action distributions and value estimates
+        for epoch in range(self.epochs):
+            # Forward pass through policy network
             probs, values_pred = self.policy(states)
             dist = torch.distributions.Categorical(probs)
             log_probs = dist.log_prob(actions)
             entropy = dist.entropy().mean()
 
-            # Calculate PPO clipped policy objective (actor loss)
+            # PPO clipped objective (actor loss)
             ratio = torch.exp(log_probs - log_probs_old)
             surr1 = ratio * advantages
             surr2 = torch.clamp(ratio, 1 - self.clip_epsilon, 1 + self.clip_epsilon) * advantages
             actor_loss = -torch.min(surr1, surr2).mean()
 
+            # Value function loss (exactly same as your code — keep as is)
             values_pred = values_pred.squeeze()
             values_old = values.detach()
 
-            # Normalize returns and values for stable critic updates
             ret_mean = returns.mean()
             ret_std = returns.std() + 1e-8
 
@@ -237,11 +240,8 @@ class PPOAgent(DQNAgent):
             values_pred_norm = (values_pred - ret_mean) / ret_std
             values_old_norm = (values_old - ret_mean) / ret_std
 
-            # Value function clipping (PPO style)
-            value_clip_eps = 0.2  
-
+            value_clip_eps = 0.2
             values_clipped = values_old_norm + (values_pred_norm - values_old_norm).clamp(-value_clip_eps, value_clip_eps)
-
             value_loss_unclipped = (values_pred_norm - returns_norm).pow(2)
             value_loss_clipped = (values_clipped - returns_norm).pow(2)
             critic_loss = 0.5 * torch.max(value_loss_unclipped, value_loss_clipped).mean()
@@ -253,9 +253,18 @@ class PPOAgent(DQNAgent):
             loss.backward()
             self.optimizer.step()
 
+            # Accumulate metrics:
             total_policy_loss += actor_loss.item()
             total_value_loss += critic_loss.item()
             total_entropy += entropy.item()
+
+            # KL-based early stopping:
+            with torch.no_grad():
+                approx_kl = (log_probs_old - log_probs).mean().item()
+
+            if approx_kl > 1.5 * self.target_kl:
+                early_stopping_message = f"Early stopping PPO update at epoch {epoch+1} due to KL={approx_kl:.5f}"
+                break
 
         self.buffer.clear()  # Clear on-policy buffer
 
@@ -263,5 +272,6 @@ class PPOAgent(DQNAgent):
             "policy_loss": total_policy_loss / self.epochs,
             "value_loss": total_value_loss / self.epochs,
             "entropy": total_entropy / self.epochs,
-            "total_loss": (total_policy_loss + total_value_loss - self.entropy_coeff * total_entropy) / self.epochs
+            "total_loss": (total_policy_loss + total_value_loss - self.entropy_coeff * total_entropy) / self.epochs,
+            "early_stopping": early_stopping_message
         }

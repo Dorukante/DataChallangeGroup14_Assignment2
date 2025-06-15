@@ -15,7 +15,6 @@ except ImportError:
     print("Warning: RandomAgent not found. Exiting...")
     sys.exit(1)
 
-
 def main(args):
     max_steps_per_episode = args.max_steps
     start_position = ast.literal_eval(args.position)
@@ -98,7 +97,6 @@ def dqn_agent(agent, args, env, max_steps_per_episode, start_position, episode_m
         episode_range = tqdm(episode_range, desc="Training agent")
         episode_range.set_postfix({'eps': round(agent.epsilon, 3)})
 
-
     for episode in episode_range:
         if args.verbose:
             print(f"\n--- Episode {episode + 1} / {args.num_episodes} ---")
@@ -154,6 +152,7 @@ def dqn_agent(agent, args, env, max_steps_per_episode, start_position, episode_m
             "epsilon": agent.epsilon,
             "avg_td_loss": avg_td_loss,
         })
+
 
         # Write metrics to JSON every 10 episodes
         if (episode + 1) % 10 == 0:
@@ -232,6 +231,7 @@ def ppo_agent(agent, args, env, max_steps_per_episode, start_position, episode_m
         value_loss = metrics.get("value_loss") if metrics else None
         entropy = metrics.get("entropy") if metrics else None
         total_loss = metrics.get("total_loss") if metrics else None
+        early_stop = metrics.get("early_stopping") if metrics else None
 
         episode_metrics.append({
             "episode": episode + 1,
@@ -241,6 +241,7 @@ def ppo_agent(agent, args, env, max_steps_per_episode, start_position, episode_m
             "value_loss": value_loss,
             "entropy": entropy,
             "total_loss": total_loss,
+            "early_stopping": early_stop
         })
 
         # Save metrics every 10 episodes
