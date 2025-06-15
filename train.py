@@ -163,13 +163,13 @@ if __name__ == "__main__":
     parser.add_argument("--epsilon_start", type=float, default=1.0, help="Initial epsilon (DQN only).")
     parser.add_argument("--epsilon_end", type=float, default=0.001, help="Final epsilon (DQN only).")
     parser.add_argument("--epsilon_decay", type=float, default=0.98, help="Epsilon decay rate (DQN only).")
+    parser.add_argument("--tau", type=float, default=0.01, help="Soft update tau")
 
     # PPO specific
     parser.add_argument("--lamda", type=float, default=0.95, help="GAE lambda parameter (PPO only).")
     parser.add_argument("--clip_eps", type=float, default=0.2, help="PPO clipping epsilon.")
     parser.add_argument("--ppo_epochs", type=int, default=6, help="Number of PPO update epochs.")
     parser.add_argument("--entropy_coeff", type=float, default=0.003, help="Entropy bonus coefficient.")
-    parser.add_argument("--tau", type=float, default=0.01, help="Soft update tau")
     parser.add_argument("--kl", type=float, default=0.01, help="Target KL for PPO early stopping.")
 
     args = parser.parse_args()
