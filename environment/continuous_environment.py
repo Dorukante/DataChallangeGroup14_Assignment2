@@ -1,15 +1,12 @@
 import numpy as np
-import pygame
-import copy
 import pymunk
 from typing import Tuple, TypeAlias, List, Dict
-from continuous_gui import ContinuousGUI
+from environment.continuous_gui import ContinuousGUI
 from collections import deque
 import json
 from agents.dqn import DQNAgent
 from tqdm import trange
-from pathlib import Path
-from warnings import warn
+from utility.helper import Helper
 from datetime import datetime
 
 Vector2: TypeAlias = Tuple[float, float]
@@ -333,6 +330,7 @@ class ContinuousEnvironment:
     @classmethod
     def load_from_file(cls, file_path: str, agent_state:AgentState, train_gui: bool = True, test_gui: bool = True) -> 'ContinuousEnvironment':
         """Loads environment configuration from a JSON file."""
+
         with open(file_path + '.json', 'r') as f:
             config = json.load(f)
 
@@ -499,7 +497,7 @@ class ContinuousEnvironment:
                        random_seed: int | float | str | bytes | bytearray = 0,
                        file_prefix: str = "evaluation"):
         """
-        Evaluates a trained DQN agent in the environment.
+        Evaluates a trained agent in the environment.
 
         Args:
             agent (DQNAgent): Trained agent.
@@ -565,21 +563,7 @@ class ContinuousEnvironment:
 
         file_name = f"{file_prefix}__" + datetime.now().strftime("%Y-%m-%d__%H-%M-%S")
 
-        save_results(file_name, self.world_stats)
+        Helper.save_results(file_name, self.world_stats)
 
 
-def save_results(file_name, world_stats):
-    out_dir = Path("results/")
-    if not out_dir.exists():
-        warn("Evaluation output directory does not exist. Creating the "
-             "directory.")
-        out_dir.mkdir(parents=True, exist_ok=True)
 
-    # Print evaluation results
-    print("Evaluation complete. Results:")
-    # Text file
-    out_fp = out_dir / f"{file_name}.txt"
-    with open(out_fp, "w") as f:
-        for key, value in world_stats.items():
-            f.write(f"{key}: {value}\n")
-            print(f"{key}: {value}")

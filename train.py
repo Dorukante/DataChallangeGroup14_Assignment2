@@ -1,5 +1,5 @@
-from continuous_environment import ContinuousEnvironment, AgentState, RaySensorNoType
-from helper import Helper
+from environment.continuous_environment import ContinuousEnvironment, AgentState, RaySensorNoType
+from utility.helper import Helper
 import argparse
 import sys
 import numpy as np
@@ -32,6 +32,8 @@ def main(args):
 
     results_path = os.path.join(os.path.curdir, "results")
 
+    environment_path = os.path.join(os.path.curdir, "environment")
+
     # define what kind of sensors the agent has
     agent_state: AgentState = AgentState(
 
@@ -52,7 +54,8 @@ def main(args):
     Helper.v_print(f"Agent State space is size: {agent_state.size()}", args.verbose)
 
     try:
-        env = ContinuousEnvironment.load_from_file(args.level_file, agent_state=agent_state, train_gui=args.train_gui, test_gui=args.test_gui)
+        level_file = os.path.join(environment_path, args.level_file)
+        env = ContinuousEnvironment.load_from_file(level_file, agent_state=agent_state, train_gui=args.train_gui, test_gui=args.test_gui)
         Helper.v_print(f"Environment loaded successfully from {args.level_file}.json", args.verbose)
     except FileNotFoundError:
         print(f"Error: {args.level_file}.json not found.")

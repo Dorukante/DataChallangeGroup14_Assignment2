@@ -1,5 +1,5 @@
 from tqdm import tqdm
-from helper import Reward_Func
+from agents.reward_function import Reward_Func
 import sys
 import numpy as np
 
@@ -101,7 +101,7 @@ class Train():
         Train a DQN agent with early stopping.
 
         Early stopping is based on average reward over a moving window.
-        If no improvement is seen over `EARLY_STOPPING_PATIENCE` episodes,
+        If no improvement is seen over `early_stop_patience` episodes,
         training stops early.
 
         Args:
@@ -117,9 +117,9 @@ class Train():
         """
 
         #early stopping for dqn
-        EARLY_STOPPING_WINDOW = 50
-        EARLY_STOPPING_PATIENCE = 25
-        EARLY_STOPPING_DELTA = 0.05
+        early_stop_window = 50
+        early_stop_patience = 25
+        early_stop_delta = 0.05
 
         step_idx = 0
         episode_range = range(args.num_episodes)
@@ -190,16 +190,16 @@ class Train():
             })
             
             reward_history.append(total_reward / (env_step_idx + 1))
-            if len(reward_history) >= EARLY_STOPPING_WINDOW:
-                current_avg = np.mean(reward_history[-EARLY_STOPPING_WINDOW:])
+            if len(reward_history) >= early_stop_window:
+                current_avg = np.mean(reward_history[-early_stop_window:])
                 
-                if current_avg > best_avg_reward + EARLY_STOPPING_DELTA:
+                if current_avg > best_avg_reward + early_stop_delta:
                     best_avg_reward = current_avg
                     epochs_no_improve = 0
                 else:
                     epochs_no_improve += 1
 
-                if epochs_no_improve >= EARLY_STOPPING_PATIENCE:
+                if epochs_no_improve >= early_stop_patience:
                     if args.verbose:
                     
                         print(f"\nEarly stopping triggered after episode {episode+1}.")

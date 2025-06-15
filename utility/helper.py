@@ -1,6 +1,8 @@
 import numpy as np
 import os 
 import json
+from pathlib import Path
+from warnings import warn
 
 class Helper:
     """
@@ -94,41 +96,21 @@ class Helper:
         with open(results_path, "w") as f:
             json.dump(episode_metrics, f, indent=2)
 
-
-class Reward_Func:
-    """
-    Reward function class providing static reward calculation method.
-    """
-
     @staticmethod
-    def reward_func(env, state, action, next_state, done) -> float:
-        """
-        Computes the reward signal based on current environment state and agent's behavior.
+    def save_results(file_name, world_stats):
+        out_dir = Path("results/")
+        if not out_dir.exists():
+            warn("Evaluation output directory does not exist. Creating the "
+                "directory.")
+            out_dir.mkdir(parents=True, exist_ok=True)
 
-        Reward combines:
-        - Base penalty (-0.5)
-        - Collision penalty (number of collisions in this step)
-        - Goal progress reward (scaled by progress and passed through tanh)
+        # Print evaluation results
+        print("Evaluation complete. Results:")
+        # Text file
+        out_fp = out_dir / f"{file_name}.txt"
+        with open(out_fp, "w") as f:
+            for key, value in world_stats.items():
+                f.write(f"{key}: {value}\n")
+                print(f"{key}: {value}")
 
-        Args:
-            env: The environment instance.
-            state: Current state before action.
-            action: Action taken.
-            next_state: Next state after action.
-            done (bool): Whether episode terminated.
 
-        Returns:
-            float: Computed reward value.
-        """
-        goal_positions = list(env.current_goals.keys())
-        if not goal_positions:
-            return 150.0  # Successful goal completion reward
-
-        progress_reward = np.tanh(env.progress_to_goal * 0.05)
-        collisions_this_step = (
-            env.agent_collided_with_obstacle_count_after - 
-            env.agent_collided_with_obstacle_count_before
-        )
-
-        reward = -0.5 + collisions_this_step + progress_reward * 10 
-        return reward
