@@ -1,5 +1,6 @@
 import numpy as np
 import os 
+import json
 
 class Helper():
 
@@ -52,10 +53,18 @@ class Helper():
         args_summary = Helper.format_args_summary(args.agent, args)
         filename = f"{agent_name}_training_metrics_{args_summary}.json"
         return os.path.join(results_dir, filename)
+    
+    @staticmethod
+    def save_training_metrices(episode_metrics, results_path):
+            
+        # Save final metrics
+        with open(results_path, "w") as f:
+            json.dump(episode_metrics, f, indent=2)
 
 
 class Reward_Func():
 
+    @staticmethod
     def reward_func(env, state, action, next_state, done):
         goal_positions = list(env.current_goals.keys())
         if not goal_positions:
