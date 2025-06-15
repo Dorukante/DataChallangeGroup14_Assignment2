@@ -15,6 +15,11 @@ except ImportError:
     print("Warning: RandomAgent not found. Exiting...")
     sys.exit(1)
 
+#early stopping for dqn
+EARLY_STOPPING_WINDOW = 50
+EARLY_STOPPING_PATIENCE = 25
+EARLY_STOPPING_DELTA = 0.05
+
 def main(args):
     max_steps_per_episode = args.max_steps
     start_position = ast.literal_eval(args.position)
@@ -91,6 +96,10 @@ def main(args):
 def dqn_agent(agent, args, env, max_steps_per_episode, start_position, episode_metrics, results_path):
     step_idx = 0
     episode_range = range(args.num_episodes)
+
+    best_avg_reward = -np.inf
+    epochs_no_improve = 0
+    reward_history = []
     
     # Setup tqdm progress bar if not verbose
     if not args.verbose:
@@ -152,6 +161,22 @@ def dqn_agent(agent, args, env, max_steps_per_episode, start_position, episode_m
             "epsilon": agent.epsilon,
             "avg_td_loss": avg_td_loss,
         })
+        
+        reward_history.append(total_reward / (env_step_idx + 1))
+        if len(reward_history) >= EARLY_STOPPING_WINDOW:
+            current_avg = np.mean(reward_history[-EARLY_STOPPING_WINDOW:])
+            
+            if current_avg > best_avg_reward + EARLY_STOPPING_DELTA:
+                best_avg_reward = current_avg
+                epochs_no_improve = 0
+            else:
+                epochs_no_improve += 1
+
+            if epochs_no_improve >= EARLY_STOPPING_PATIENCE:
+                if args.verbose():
+                
+                    print(f"\nEarly stopping triggered after episode {episode+1}.")
+                break
 
 
         # Write metrics to JSON every 10 episodes
