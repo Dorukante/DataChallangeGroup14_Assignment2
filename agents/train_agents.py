@@ -5,7 +5,26 @@ import numpy as np
 
 class Train():
 
+    """
+    Class that trains the PPO and DQN agents
+    """
+
+    @staticmethod
     def train_ppo_agent(agent, args, env, max_steps_per_episode, start_position, episode_metrics):
+        """
+        Train a PPO agent on the given environment.
+
+        Args:
+            agent: PPO agent instance.
+            args: Namespace object containing arguments.
+            env: The environment instance.
+            max_steps_per_episode: Maximum allowed steps per episode.
+            start_position: Starting position of the agent.
+            episode_metrics: List to accumulate training metrics per episode.
+
+        Returns:
+            List of dictionaries containing episode metrics after PPO training.
+        """
         episode_range = range(args.num_episodes)
         if not args.verbose:
             episode_range = tqdm(episode_range, desc="Training agent")
@@ -75,10 +94,28 @@ class Train():
 
         return episode_metrics
     
-
+    @staticmethod
     def train_dqn_agent(agent, args, env, max_steps_per_episode, 
                   start_position, episode_metrics):
-        
+        """
+        Train a DQN agent with early stopping.
+
+        Early stopping is based on average reward over a moving window.
+        If no improvement is seen over `EARLY_STOPPING_PATIENCE` episodes,
+        training stops early.
+
+        Args:
+            agent: DQN agent instance.
+            args: Namespace object containing arguments.
+            env: The environment instance.
+            max_steps_per_episode: Maximum allowed steps per episode.
+            start_position: Starting position of the agent.
+            episode_metrics: List to accumulate training metrics per episode.
+
+        Returns:
+            List of dictionaries containing episode metrics after DQN training.
+        """
+
         #early stopping for dqn
         EARLY_STOPPING_WINDOW = 50
         EARLY_STOPPING_PATIENCE = 25

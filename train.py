@@ -152,6 +152,7 @@ if __name__ == "__main__":
     parser.add_argument("--ppo_epochs", type=int, default=6, help="Number of PPO Update Epochs per Rollout")
     parser.add_argument("--entropy_coeff", type=float, default=0.003, help="Entropy Coefficient")
     parser.add_argument("--tau", type=float, default=0.01, help="Soft update parameter")
+    parser.add_argument("--kl", type=float, default=0.01, help="KL early stopping threshold for PPO")
 
     args = parser.parse_args()
     start_position = ast.literal_eval(args.position)
