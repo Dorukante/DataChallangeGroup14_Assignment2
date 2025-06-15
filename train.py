@@ -176,6 +176,4 @@ if __name__ == "__main__":
     start_position = ast.literal_eval(args.position)
     main(args)
 
-    args = parser.parse_args()
-    start_position = ast.literal_eval(args.position)
-    main(args)
+ 
