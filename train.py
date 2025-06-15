@@ -12,11 +12,19 @@ try:
     from agents.train_agents import Train
 
 except ImportError:
-    print("Warning: RandomAgent not found. Exiting...")
+    print("Warning: Agent not found. Exiting...")
     sys.exit(1)
 
 
 def main(args):
+    """
+    Main Function. Sets up environment, agents, training loop, 
+    evaluation, and metrics saving for DQN and PPO agents.
+
+    Args:
+        args: Parsed argparse command-line arguments.
+    """
+
     max_steps_per_episode = args.max_steps
     start_position = ast.literal_eval(args.position)
 
@@ -124,35 +132,46 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run a continuous environment simulation.")
+    # Common Arguments
     parser.add_argument("--level_file", type=str, default="level_1",
-                        help="Name of the level JSON file (without .json extension) to load. Default: level_1")
+                        help="Name of the level JSON file (without extension). Default: level_1")
     parser.add_argument("--num_episodes", type=int, default=300,
-                        help="Number of episodes to run. Default: 50")
+                        help="Number of episodes to train. Default: 300")
     parser.add_argument("--max_steps", type=int, default=3000,
-                        help="Maximum steps per episode. Default: 1000")
+                        help="Maximum steps per episode. Default: 3000")
     parser.add_argument("--train-gui", action="store_true",
-                        help="Run the simulation with the GUI.")
+                        help="Run environment GUI during training.")
     parser.add_argument("--test-gui", action="store_true",
-                        help="Only enable GUI during evaluation phase.")
+                        help="Run GUI during evaluation phase only.")
     parser.add_argument("--verbose", action="store_true",
                         help="Print detailed training information.")
     parser.add_argument("--agent", type=str, default="dqn", choices=["dqn", "ppo"],
-                        help="Type of agent to use. Default: random")
-    parser.add_argument("--gamma", type=float, default=0.99, help="Discount factor gamma.")
-    parser.add_argument("--lr", type=float, default=3e-4, help="Learning rate")
-    parser.add_argument("--buffer", type=int, default=10000, help="Maximum capacity of the replay buffer")
-    parser.add_argument("--batch", type=int, default=256, help="Batch size for learning")
-    parser.add_argument("--epsilon_start", type=float, default=1.0, help="Initial value for epsilon")
-    parser.add_argument("--epsilon_end", type=float, default=0.001, help="Minimum value for epsilon")
-    parser.add_argument("--epsilon_decay", type=float, default=0.98, help=" Decay rate for epsilon")
-    parser.add_argument("--hidden_dim", type=int, default=256, help=" Number of units in hidden layers of the DQN")
-    parser.add_argument("--position", type=str, default="(3,11)", help="Start position of the agent")
-    parser.add_argument("--lamda", type=float, default=0.95, help=" λ for Generalized Advantage Estimation")
-    parser.add_argument("--clip_eps", type=float, default=0.2, help=" PPO Clipping Parameter")
-    parser.add_argument("--ppo_epochs", type=int, default=6, help="Number of PPO Update Epochs per Rollout")
-    parser.add_argument("--entropy_coeff", type=float, default=0.003, help="Entropy Coefficient")
-    parser.add_argument("--tau", type=float, default=0.01, help="Soft update parameter")
-    parser.add_argument("--kl", type=float, default=0.01, help="KL early stopping threshold for PPO")
+                        help="Agent type: dqn or ppo. Default: dqn")
+
+    # Shared hyperparameters
+    parser.add_argument("--gamma", type=float, default=0.99, help="Discount factor (gamma).")
+    parser.add_argument("--lr", type=float, default=3e-4, help="Learning rate.")
+    parser.add_argument("--buffer", type=int, default=10000, help="Replay buffer capacity (only used for DQN).")
+    parser.add_argument("--batch", type=int, default=256, help="Batch size for learning.")
+    parser.add_argument("--hidden_dim", type=int, default=256, help="Hidden layer size.")
+    parser.add_argument("--position", type=str, default="(3,11)", help="Agent start position as tuple string.")
+
+    # DQN specific
+    parser.add_argument("--epsilon_start", type=float, default=1.0, help="Initial epsilon (DQN only).")
+    parser.add_argument("--epsilon_end", type=float, default=0.001, help="Final epsilon (DQN only).")
+    parser.add_argument("--epsilon_decay", type=float, default=0.98, help="Epsilon decay rate (DQN only).")
+
+    # PPO specific
+    parser.add_argument("--lamda", type=float, default=0.95, help="GAE lambda parameter (PPO only).")
+    parser.add_argument("--clip_eps", type=float, default=0.2, help="PPO clipping epsilon.")
+    parser.add_argument("--ppo_epochs", type=int, default=6, help="Number of PPO update epochs.")
+    parser.add_argument("--entropy_coeff", type=float, default=0.003, help="Entropy bonus coefficient.")
+    parser.add_argument("--tau", type=float, default=0.01, help="Soft update tau")
+    parser.add_argument("--kl", type=float, default=0.01, help="Target KL for PPO early stopping.")
+
+    args = parser.parse_args()
+    start_position = ast.literal_eval(args.position)
+    main(args)
 
     args = parser.parse_args()
     start_position = ast.literal_eval(args.position)
