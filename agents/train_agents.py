@@ -27,7 +27,7 @@ class Train():
         """
         episode_range = range(args.num_episodes)
         if not args.verbose:
-            episode_range = tqdm(episode_range, desc="Training agent")
+            episode_range = tqdm(episode_range, desc="Training PPO")
 
         for episode in episode_range:
             if args.verbose and (episode+1) % 10 == 0:
@@ -130,7 +130,7 @@ class Train():
         
         # Setup tqdm progress bar if not verbose
         if not args.verbose:
-            episode_range = tqdm(episode_range, desc="Training agent")
+            episode_range = tqdm(episode_range, desc="Training DQN")
             episode_range.set_postfix({'eps': round(agent.epsilon, 3)})
 
         for episode in episode_range:
