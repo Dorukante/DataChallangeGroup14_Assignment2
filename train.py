@@ -1,4 +1,5 @@
 from continuous_environment import ContinuousEnvironment, AgentState, RaySensorNoType
+from herper import Helper, Reward_Func
 import argparse
 import sys
 import numpy as np
@@ -7,70 +8,12 @@ import json
 import os
 from tqdm import tqdm
 
-def v_print(text: str, verbose: bool):
-    """
-    Verbose print function.
-    only if verbose is True, print the text.
-    """
-    if verbose:
-        print(text)
-
 try:
     from agents.dqn import DQNAgent
     from agents.ppo import PPOAgent
 except ImportError:
     print("Warning: RandomAgent not found. Exiting...")
     sys.exit(1)
-
-def reward_func(env, state, action, next_state, done):
-    goal_positions = list(env.current_goals.keys())
-    if not goal_positions:
-        return 150.0
-
-    progress_reward = np.tanh(env.progress_to_goal * 0.05)
-    collisions_this_step = env.agent_collided_with_obstacle_count_after - env.agent_collided_with_obstacle_count_before
-
-    return -0.5 + collisions_this_step + progress_reward * 10 
-
-
-def format_args_summary(agent_type: str, args) -> str:
-    if agent_type == "dqn":
-        return (
-            f"{args.level_file}"
-            f"_e{args.num_episodes}"
-            f"_max_steps{args.max_steps}"
-            f"_g{args.gamma}"
-            f"_lr{args.lr}"
-            f"_bcap{args.buffer}"
-            f"_bsize{args.batch}"
-            f"_hdim{args.hidden_dim}"
-            f"_eps_s{args.epsilon_start}"
-            f"_eps_e{args.epsilon_end}"
-            f"_eps_d{args.epsilon_decay}"
-        )
-    elif agent_type == "ppo":
-        return (
-            f"{args.level_file}"
-            f"_e{args.num_episodes}"
-            f"_max_steps{args.max_steps}"
-            f"_g{args.gamma}"
-            f"_lr{args.lr}"
-            f"_bcap{args.buffer}"
-            f"_bsize{args.batch}"
-            f"_hdim{args.hidden_dim}"
-            f"_lam{args.lamda}"
-            f"_c{args.clip_eps}"
-            f"_ent{args.entropy_coeff}"
-            f"_ppo_ep{args.ppo_epochs}"
-        )
-    else:
-        raise ValueError(f"Unsupported agent type: {agent_type}")
-
-def get_results_path(agent, args, results_dir: str) -> str:
-    agent_name = agent.__class__.__name__
-    args_summary = format_args_summary(args.agent, args)
-    filename = f"{agent_name}_training_metrics_{args_summary}.json"
-    return os.path.join(results_dir, filename)
 
 
 def main(args):
@@ -98,11 +41,11 @@ def main(args):
 
         ]
     )
-    v_print(f"Agent State space is size: {agent_state.size()}", args.verbose)
+    Helper.v_print(f"Agent State space is size: {agent_state.size()}", args.verbose)
 
     try:
         env = ContinuousEnvironment.load_from_file(args.level_file, agent_state=agent_state, train_gui=args.train_gui, test_gui=args.test_gui)
-        v_print(f"Environment loaded successfully from {args.level_file}.json", args.verbose)
+        Helper.v_print(f"Environment loaded successfully from {args.level_file}.json", args.verbose)
     except FileNotFoundError:
         print(f"Error: {args.level_file}.json not found.")
         sys.exit(1)
@@ -123,7 +66,7 @@ def main(args):
             epsilon_end=args.epsilon_end,
             epsilon_decay=args.epsilon_decay
         )
-        results_path = get_results_path(agent, args, results_path)
+        results_path = Helper.get_results_path(agent, args, results_path)
         dqn_agent(agent, args, env, max_steps_per_episode, start_position, episode_metrics, results_path)
 
     elif args.agent == "ppo":
@@ -139,7 +82,7 @@ def main(args):
             entropy_coeff=args.entropy_coeff,
             epochs=args.ppo_epochs
         )
-        results_path = get_results_path(agent, args, results_path)
+        results_path = Helper.get_results_path(agent, args, results_path)
         ppo_agent(agent, args, env, max_steps_per_episode, start_position, episode_metrics, results_path)
 
     else:
@@ -174,7 +117,7 @@ def dqn_agent(agent, args, env, max_steps_per_episode, start_position, episode_m
             step_idx += 1
             action = agent.select_action(continuous_state)
             next_state, done = env.step(action, render=env.train_gui)
-            reward = reward_func(env, continuous_state, action, next_state, done)
+            reward = Reward_Func.reward_func(env, continuous_state, action, next_state, done)
             agent.store_experience(continuous_state, action, reward, next_state, done)
 
             total_reward += reward
@@ -266,7 +209,7 @@ def ppo_agent(agent, args, env, max_steps_per_episode, start_position, episode_m
                     env.gui.close()
                 sys.exit(1)
 
-            reward = reward_func(env, continuous_state, action, next_state, done)
+            reward = Reward_Func.reward_func(env, continuous_state, action, next_state, done)
             total_reward += reward
 
             agent.store_experience(
