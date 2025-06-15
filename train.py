@@ -72,7 +72,8 @@ def main(args):
             lr=args.lr,
             epsilon_start=args.epsilon_start,
             epsilon_end=args.epsilon_end,
-            epsilon_decay=args.epsilon_decay
+            epsilon_decay=args.epsilon_decay,
+            tau = args.tau
         )
 
         results_path = Helper.get_results_path(agent, args, results_path)
@@ -105,7 +106,9 @@ def main(args):
             lam=args.lamda,
             clip_eps=args.clip_eps,
             entropy_coeff=args.entropy_coeff,
-            epochs=args.ppo_epochs
+            epochs=args.ppo_epochs,
+            kl = args.kl
+            
         )
         results_path = Helper.get_results_path(agent, args, results_path)
         episode_metrics = Train.train_ppo_agent(agent, args, env, max_steps_per_episode, start_position, episode_metrics)
