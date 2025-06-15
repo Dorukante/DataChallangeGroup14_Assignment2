@@ -1,5 +1,5 @@
 from continuous_environment import ContinuousEnvironment, AgentState, RaySensorNoType
-from herper import Helper, Reward_Func
+from helper import Helper, Reward_Func
 import argparse
 import sys
 import numpy as np
