@@ -202,8 +202,8 @@ class ContinuousEnvironment:
     GOAL_RADIUS = 16  # radius of the goal circles
     AGENT_RADIUS = 16  # radius of the agent circle
     AGENT_SPEED = 64  # units per second
-    AGENT_TURN_SPEED = np.pi / 6
-    AGENT_FRONT_SENSOR_RANGE = 500  # range of the front sensor in pixels
+    AGENT_TURN_SPEED = np.pi / 9
+    # AGENT_FRONT_SENSOR_RANGE = 500  # range of the front sensor in pixels
 
     GOAL_COLLISION_TYPE = 1  # collision type for goals
     AGENT_COLLISION_TYPE = 2  # collision type for agent
