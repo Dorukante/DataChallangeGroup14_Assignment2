@@ -38,7 +38,6 @@ def main(args):
     agent_state: AgentState = AgentState(
 
         sensors = [
-            # RaySensorNoType(ray_angle=0, ray_length=1000),
             RaySensorNoType(ray_angle=0, ray_length=600, verbose=args.verbose),
             RaySensorNoType(ray_angle=np.pi * 0.5, ray_length=600, verbose=args.verbose),
             RaySensorNoType(ray_angle=np.pi * -0.5, ray_length=600, verbose=args.verbose),
