@@ -1,13 +1,10 @@
 from time import perf_counter
-
 import numpy as np
 import pymunk
 from pygame import gfxdraw
-
 import pygame
 import sys
-
-from continuous_environment import *
+from environment.continuous_environment import *
 
 
 class ContinuousGUI:
