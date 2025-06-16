@@ -1,0 +1,64 @@
+{
+    "name": "warehouse_level_1",
+    "extents": [600, 480],
+    "start_position": [40, 240],
+    "goals": [
+        [510, 240]
+    ],
+    "obstacles": [{
+            "position": [110, 40],
+            "size": [75, 120],
+            "name": "shelf_A1"
+        },
+        {
+            "position": [110, 200],
+            "size": [75, 80],
+            "name": "shelf_A2"
+        },
+        {
+            "position": [110, 320],
+            "size": [75, 120],
+            "name": "shelf_A3"
+        },
+        {
+            "position": [260, 40],
+            "size": [75, 120],
+            "name": "shelf_B1"
+        },
+        {
+            "position": [260, 200],
+            "size": [75, 80],
+            "name": "shelf_B2"
+        },
+        {
+            "position": [260, 320],
+            "size": [75, 120],
+            "name": "shelf_B3"
+        },
+        {
+            "position": [410, 40],
+            "size": [75, 120],
+            "name": "shelf_C1"
+        },
+        {
+            "position": [410, 200],
+            "size": [75, 80],
+            "name": "shelf_C2"
+        },
+        {
+            "position": [410, 320],
+            "size": [75, 120],
+            "name": "shelf_C3"
+        },
+        {
+            "position": [0, 180],
+            "size": [40, 120],
+            "name": "loading_dock"
+        },
+        {
+            "position": [560, 0],
+            "size": [40, 480],
+            "name": "packing_area"
+        }
+    ]
+}
