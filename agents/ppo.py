@@ -34,22 +34,19 @@ class ActorCritic(nn.Module):
             nn.Linear(hidden_dim, hidden_dim),
             nn.LayerNorm(hidden_dim),
             nn.ReLU(),
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.LayerNorm(hidden_dim),
-            nn.ReLU()
         )
 
         self.actor = nn.Sequential(
-            nn.Linear(hidden_dim, hidden_dim // 2),
+            nn.Linear(hidden_dim, hidden_dim),
             nn.ReLU(),
-            nn.Linear(hidden_dim // 2, action_dim),
+            nn.Linear(hidden_dim, action_dim),
             nn.Softmax(dim=-1)
         )
 
         self.critic = nn.Sequential(
-            nn.Linear(hidden_dim, hidden_dim // 2),
+            nn.Linear(hidden_dim, hidden_dim),
             nn.ReLU(),
-            nn.Linear(hidden_dim // 2, 1)
+            nn.Linear(hidden_dim, 1)
 )
 
     def forward(self, x):
@@ -276,13 +273,13 @@ class PPOAgent(DQNAgent):
             total_value_loss += critic_loss.item()
             total_entropy += entropy.item()
 
-            # KL-based early stopping:
-            with torch.no_grad():
-                approx_kl = (log_probs_old - log_probs).mean().item()
+            # # KL-based early stopping:
+            # with torch.no_grad():
+            #     approx_kl = (log_probs_old - log_probs).mean().item()
 
-            if approx_kl > 1.5 * self.target_kl:
-                early_stopping_message = f"Early stopping PPO update at epoch {epoch+1} due to KL={approx_kl:.5f}"
-                break
+            # if approx_kl > 1.5 * self.target_kl:
+            #     early_stopping_message = f"Early stopping PPO update at epoch {epoch+1} due to KL={approx_kl:.5f}"
+            #     break
 
         self.buffer.clear()  # Clear on-policy buffer
 
