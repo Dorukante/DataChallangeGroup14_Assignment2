@@ -115,19 +115,10 @@ class Train():
         Returns:
             List of dictionaries containing episode metrics after DQN training.
         """
-
-        #early stopping for dqn
-        early_stop_window = 50
-        early_stop_patience = 25
-        early_stop_delta = 0.05
-
+        
         step_idx = 0
         episode_range = range(args.num_episodes)
 
-        best_avg_reward = -np.inf
-        epochs_no_improve = 0
-        reward_history = []
-        
         # Setup tqdm progress bar if not verbose
         if not args.verbose:
             episode_range = tqdm(episode_range, desc="Training DQN")
@@ -189,22 +180,6 @@ class Train():
                 "avg_td_loss": avg_td_loss,
             })
             
-            reward_history.append(total_reward / (env_step_idx + 1))
-            if len(reward_history) >= early_stop_window:
-                current_avg = np.mean(reward_history[-early_stop_window:])
-                
-                if current_avg > best_avg_reward + early_stop_delta:
-                    best_avg_reward = current_avg
-                    epochs_no_improve = 0
-                else:
-                    epochs_no_improve += 1
-
-                if epochs_no_improve >= early_stop_patience:
-                    if args.verbose:
-                    
-                        print(f"\nEarly stopping triggered after episode {episode+1}.")
-                    break
-
         if env.train_gui and not env.test_gui:
             env.gui.close()
 
