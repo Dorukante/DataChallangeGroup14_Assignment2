@@ -155,8 +155,8 @@ if __name__ == "__main__":
     parser.add_argument("--gamma", type=float, default=0.99, help="Discount factor (gamma).")
     parser.add_argument("--lr", type=float, default=3e-4, help="Learning rate.")
     parser.add_argument("--buffer", type=int, default=10000, help="Replay buffer capacity (only used for DQN).")
-    parser.add_argument("--batch", type=int, default=256, help="Batch size for learning.")
-    parser.add_argument("--hidden_dim", type=int, default=256, help="Hidden layer size.")
+    parser.add_argument("--batch", type=int, default=128, help="Batch size for learning.")
+    parser.add_argument("--hidden_dim", type=int, default=128, help="Hidden layer size.")
     parser.add_argument("--position", type=str, default="(3,11)", help="Agent start position as tuple string.")
 
     # DQN specific
@@ -168,8 +168,8 @@ if __name__ == "__main__":
     # PPO specific
     parser.add_argument("--lamda", type=float, default=0.95, help="GAE lambda parameter (PPO only).")
     parser.add_argument("--clip_eps", type=float, default=0.2, help="PPO clipping epsilon.")
-    parser.add_argument("--ppo_epochs", type=int, default=6, help="Number of PPO update epochs.")
-    parser.add_argument("--entropy_coeff", type=float, default=0.003, help="Entropy bonus coefficient.")
+    parser.add_argument("--ppo_epochs", type=int, default=4, help="Number of PPO update epochs.")
+    parser.add_argument("--entropy_coeff", type=float, default=0.7, help="Entropy bonus coefficient.")
     parser.add_argument("--kl", type=float, default=0.01, help="Target KL for PPO early stopping.")
 
     args = parser.parse_args()

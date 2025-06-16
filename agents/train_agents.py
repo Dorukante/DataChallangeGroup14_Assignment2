@@ -55,6 +55,7 @@ class Train():
 
                 reward = Reward_Func.reward_func(env, continuous_state, action, next_state, done)
                 total_reward += reward
+                
 
                 agent.store_experience(
                     state=continuous_state,
