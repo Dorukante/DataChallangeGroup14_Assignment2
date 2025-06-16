@@ -27,13 +27,16 @@ class Reward_Func:
         """
         goal_positions = list(env.current_goals.keys())
         if not goal_positions:
-            return 150.0  # Successful goal completion reward
+            return 250.0  # Successful goal completion reward
 
         progress_reward = np.tanh(env.progress_to_goal * 0.05)
+        # print("progress",progress_reward)
         collisions_this_step = (
             env.agent_collided_with_obstacle_count_after - 
             env.agent_collided_with_obstacle_count_before
         )
+        # print("collision",collisions_this_step)
 
-        reward = -0.5 + collisions_this_step + progress_reward * 10 
+        reward = -0.5 - collisions_this_step + progress_reward 
+        # print("reward", reward)
         return reward
