@@ -27,7 +27,7 @@ class Reward_Func:
         """
         goal_positions = list(env.current_goals.keys())
         if not goal_positions:
-            return 250.0  # Successful goal completion reward
+            return 10000.0  # Successful goal completion reward
 
         progress_reward = np.tanh(env.progress_to_goal * 0.05)
         # print("progress",progress_reward)

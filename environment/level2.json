@@ -1,0 +1,12 @@
+{
+    "extents": [600, 480],
+    "start_position": [50, 240],
+    "goals": [
+        [550, 50]
+    ],
+    "obstacles": [
+        { "position": [150, 0], "size": [40, 200] },
+        { "position": [150, 280], "size": [40, 200] },
+        { "position": [380, 100], "size": [40, 280] }
+    ]
+}

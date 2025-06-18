@@ -83,8 +83,7 @@ class PPOAgent(DQNAgent):
                  lam: float = 0.95, 
                  clip_eps: float = 0.2, 
                  entropy_coeff: float = 0.01, 
-                 epochs: int = 4, 
-                 kl: float = 0.01
+                 epochs: int = 4
     ):
         """
         Initializes the PPO agent.
@@ -100,7 +99,6 @@ class PPOAgent(DQNAgent):
             clip_eps (float): Clipping threshold for PPO.
             entropy_coeff (float): Entropy regularization coefficient.
             epochs (int): Number of PPO update epochs per batch.
-            kl (float): KL early stopping threshold
         """
         super().__init__(
             state_dim=state_dim, action_dim=action_dim, hidden_dim=hidden_dim,
@@ -116,8 +114,6 @@ class PPOAgent(DQNAgent):
         self.clip_epsilon = clip_eps
         self.entropy_coeff = entropy_coeff
         self.epochs = epochs
-        self.target_kl = kl
-
 
     def select_action(self, state: np.ndarray, greedy: bool = False) -> Union[int, Tuple[int, float, float]]:
         """
@@ -226,7 +222,7 @@ class PPOAgent(DQNAgent):
         # Compute GAE advantages and returns
         advantages, returns = self.compute_gae(rewards, values, dones, next_value)
         # Normalize advantages to stabilize policy updates
-        advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
+        # advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
 
         total_policy_loss, total_value_loss, total_entropy = 0.0, 0.0, 0.0
         early_stopping_message = None
@@ -273,13 +269,6 @@ class PPOAgent(DQNAgent):
             total_value_loss += critic_loss.item()
             total_entropy += entropy.item()
 
-            # # KL-based early stopping:
-            # with torch.no_grad():
-            #     approx_kl = (log_probs_old - log_probs).mean().item()
-
-            # if approx_kl > 1.5 * self.target_kl:
-            #     early_stopping_message = f"Early stopping PPO update at epoch {epoch+1} due to KL={approx_kl:.5f}"
-            #     break
 
         self.buffer.clear()  # Clear on-policy buffer
 
