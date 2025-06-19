@@ -1,4 +1,4 @@
-total_time: 23.000000000000302
+total_time: 32.50000000000072
 collision_count: 4
 goals_remaining: 0
 goals_reached: 1

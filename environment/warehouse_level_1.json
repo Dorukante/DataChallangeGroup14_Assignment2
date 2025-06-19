@@ -3,7 +3,7 @@
     "extents": [600, 480],
     "start_position": [40, 240],
     "goals": [
-        [510, 240]
+        [520, 240]
     ],
     "obstacles": [{
             "position": [110, 40],

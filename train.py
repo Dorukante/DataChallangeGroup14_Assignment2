@@ -165,10 +165,10 @@ if __name__ == "__main__":
     parser.add_argument("--tau", type=float, default=0.01, help="Soft update tau")
 
     # PPO specific
-    parser.add_argument("--lamda", type=float, default=0.96, help="GAE lambda parameter (PPO only).")
-    parser.add_argument("--clip_eps", type=float, default=0.3, help="PPO clipping epsilon.")
-    parser.add_argument("--ppo_epochs", type=int, default=7, help="Number of PPO update epochs.")
-    parser.add_argument("--entropy_coeff", type=float, default=0.3, help="Entropy bonus coefficient.")
+    parser.add_argument("--lamda", type=float, default=0.95, help="GAE lambda parameter (PPO only).")
+    parser.add_argument("--clip_eps", type=float, default=0.2, help="PPO clipping epsilon.")
+    parser.add_argument("--ppo_epochs", type=int, default=4, help="Number of PPO update epochs.")
+    parser.add_argument("--entropy_coeff", type=float, default=0.4, help="Entropy bonus coefficient.")
 
     args = parser.parse_args()
     start_position = ast.literal_eval(args.position)
