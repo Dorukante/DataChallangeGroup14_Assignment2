@@ -10,7 +10,7 @@ class Train():
     """
 
     @staticmethod
-    def train_ppo_agent(agent, args, env, max_steps_per_episode, start_position, episode_metrics):
+    def train_ppo_agent(agent, args, env, max_steps_per_episode, episode_metrics):
         """
         Train a PPO agent on the given environment.
 
@@ -19,7 +19,6 @@ class Train():
             args: Namespace object containing arguments.
             env: The environment instance.
             max_steps_per_episode: Maximum allowed steps per episode.
-            start_position: Starting position of the agent.
             episode_metrics: List to accumulate training metrics per episode.
 
         Returns:
@@ -77,7 +76,6 @@ class Train():
             value_loss = metrics.get("value_loss") if metrics else None
             entropy = metrics.get("entropy") if metrics else None
             total_loss = metrics.get("total_loss") if metrics else None
-            early_stop = metrics.get("early_stopping") if metrics else None
 
             episode_metrics.append({
                 "episode": episode + 1,
@@ -86,8 +84,7 @@ class Train():
                 "policy_loss": policy_loss,
                 "value_loss": value_loss,
                 "entropy": entropy,
-                "total_loss": total_loss,
-                "early_stopping": early_stop
+                "total_loss": total_loss
             })
 
         if env.train_gui and not env.test_gui:
@@ -96,8 +93,7 @@ class Train():
         return episode_metrics
     
     @staticmethod
-    def train_dqn_agent(agent, args, env, max_steps_per_episode, 
-                  start_position, episode_metrics):
+    def train_dqn_agent(agent, args, env, max_steps_per_episode, episode_metrics):
         """
         Train a DQN agent with early stopping.
 
@@ -110,7 +106,6 @@ class Train():
             args: Namespace object containing arguments.
             env: The environment instance.
             max_steps_per_episode: Maximum allowed steps per episode.
-            start_position: Starting position of the agent.
             episode_metrics: List to accumulate training metrics per episode.
 
         Returns:

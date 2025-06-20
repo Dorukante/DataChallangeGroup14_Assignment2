@@ -49,5 +49,5 @@ class Reward_Func:
             env.agent_collided_with_obstacle_count_before
         )
 
-        reward = -0.5 - collisions_this_step * 10 + progress_reward
+        reward = -0.5 - collisions_this_step*10 + progress_reward
         return reward

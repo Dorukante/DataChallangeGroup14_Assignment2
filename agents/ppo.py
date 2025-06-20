@@ -212,7 +212,6 @@ class PPOAgent(DQNAgent):
         advantages, returns = self.compute_gae(rewards, values, dones, next_value)
 
         total_policy_loss, total_value_loss, total_entropy = 0.0, 0.0, 0.0
-        early_stopping_message = None
 
         for epoch in range(self.epochs):
             # Forward pass through policy network
@@ -263,6 +262,5 @@ class PPOAgent(DQNAgent):
             "policy_loss": total_policy_loss / self.epochs,
             "value_loss": total_value_loss / self.epochs,
             "entropy": total_entropy / self.epochs,
-            "total_loss": (total_policy_loss + total_value_loss - self.entropy_coeff * total_entropy) / self.epochs,
-            "early_stopping": early_stopping_message
+            "total_loss": (total_policy_loss + total_value_loss - self.entropy_coeff * total_entropy) / self.epochs
         }

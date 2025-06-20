@@ -26,7 +26,6 @@ def main(args):
     """
 
     max_steps_per_episode = args.max_steps
-    start_position = ast.literal_eval(args.position)
 
     episode_metrics = []
 
@@ -79,7 +78,7 @@ def main(args):
         )
 
         results_path = Helper.get_results_path(agent, args, results_path)
-        Train.train_dqn_agent(agent, args, env, max_steps_per_episode, start_position, episode_metrics)
+        Train.train_dqn_agent(agent, args, env, max_steps_per_episode, episode_metrics)
 
         #save the training metrices
         Helper.save_training_metrices(episode_metrics, results_path)
@@ -87,11 +86,8 @@ def main(args):
         Helper.v_print("\nTraining is finished\nStarting evaluation...", args.verbose)
 
         #evaluate the agent
-        env.evaluate_agent(agent=agent,
-                       max_steps=max_steps_per_episode,
-                       agent_start_pos=None,
-                       random_seed=42,
-                       file_prefix="post_training_eval_dqn")
+        env.evaluate_agent(agent=agent,max_steps=max_steps_per_episode,
+                       random_seed=42, file_prefix="post_training_eval_dqn")
         
         if env.test_gui:
             env.gui.close()
@@ -111,7 +107,7 @@ def main(args):
             
         )
         results_path = Helper.get_results_path(agent, args, results_path)
-        episode_metrics = Train.train_ppo_agent(agent, args, env, max_steps_per_episode, start_position, episode_metrics)
+        episode_metrics = Train.train_ppo_agent(agent, args, env, max_steps_per_episode, episode_metrics)
 
         #save the training metrices
         Helper.save_training_metrices(episode_metrics, results_path)
@@ -119,10 +115,7 @@ def main(args):
         Helper.v_print("\nTraining is finished\nStarting evaluation...", args.verbose)
 
         #evaluate the agent
-        env.evaluate_agent(agent=agent,
-                       max_steps=max_steps_per_episode,
-                       agent_start_pos=None,
-                       random_seed=42,
+        env.evaluate_agent(agent=agent, max_steps=max_steps_per_episode, random_seed=42,
                        file_prefix="post_training_eval_ppo")
         
         if env.test_gui:
@@ -156,7 +149,6 @@ if __name__ == "__main__":
     parser.add_argument("--buffer", type=int, default=10000, help="Replay buffer capacity (only used for DQN).")
     parser.add_argument("--batch", type=int, default=128, help="Batch size for learning.")
     parser.add_argument("--hidden_dim", type=int, default=128, help="Hidden layer size.")
-    parser.add_argument("--position", type=str, default="(3,11)", help="Agent start position as tuple string.")
 
     # DQN specific
     parser.add_argument("--epsilon_start", type=float, default=1.0, help="Initial epsilon (DQN only).")
@@ -171,7 +163,6 @@ if __name__ == "__main__":
     parser.add_argument("--entropy_coeff", type=float, default=0.4, help="Entropy bonus coefficient.")
 
     args = parser.parse_args()
-    start_position = ast.literal_eval(args.position)
     main(args)
 
  
