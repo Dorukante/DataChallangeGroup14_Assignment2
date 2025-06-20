@@ -8,8 +8,8 @@ from typing import Tuple, Optional, Dict, Union
 
 class ActorCritic(nn.Module):
     """
-    Actor-Critic network used in PPO. It has a shared feature extractor (MLP),
-    followed by separate actor (policy) and critic (value) heads.
+    Actor-Critic network used in PPO. Contains a shared MLP feature extractor,
+    an actor head for policy distribution, and a critic head for state value estimation.
 
     Attributes:
         actor (nn.Sequential): Outputs action probabilities (policy head).
@@ -59,12 +59,10 @@ class ActorCritic(nn.Module):
         Returns:
             Tuple[torch.Tensor, torch.Tensor]: (policy distribution, value estimate)
         """
-         
         x = self.fc(x)
         policy_dist = self.actor(x)
         value = self.critic(x)
         return policy_dist, value
-
 
 class PPOAgent(DQNAgent):
     """
@@ -77,12 +75,12 @@ class PPOAgent(DQNAgent):
                  state_dim: int, 
                  action_dim: int, 
                  hidden_dim: int = 128,
-                 batch_size: int = 64, 
+                 batch_size: int = 128, 
                  gamma: float = 0.99, 
-                 lr: float = 1e-3, 
+                 lr: float = 3e-4, 
                  lam: float = 0.95, 
                  clip_eps: float = 0.2, 
-                 entropy_coeff: float = 0.01, 
+                 entropy_coeff: float = 0.4, 
                  epochs: int = 4
     ):
         """
@@ -91,14 +89,14 @@ class PPOAgent(DQNAgent):
         Args:
             state_dim (int): Dimension of the input state.
             action_dim (int): Number of possible actions.
-            hidden_dim (int): Size of the hidden layers.
-            batch_size (int): Batch size used in training.
-            gamma (float): Discount factor.
-            lr (float): Learning rate.
-            lam (float): GAE lambda.
-            clip_eps (float): Clipping threshold for PPO.
-            entropy_coeff (float): Entropy regularization coefficient.
-            epochs (int): Number of PPO update epochs per batch.
+            hidden_dim (int): Size of the hidden layers. Defaults to 128.
+            batch_size (int): Batch size used in training. Defaults to 128.
+            gamma (float): Discount factor. Defaults to 0.99.
+            lr (float): Learning rate. Defaults to 3e-4.
+            lam (float): GAE lambda. Defaults to 0.95.
+            clip_eps (float): Clipping threshold for PPO. Defaults to 0.2.
+            entropy_coeff (float): Entropy regularization coefficient. Defaults to 0.4.
+            epochs (int): Number of PPO update epochs per batch. Defaults to 4.
         """
         super().__init__(
             state_dim=state_dim, action_dim=action_dim, hidden_dim=hidden_dim,
@@ -117,15 +115,15 @@ class PPOAgent(DQNAgent):
 
     def select_action(self, state: np.ndarray, greedy: bool = False) -> Union[int, Tuple[int, float, float]]:
         """
-        Selects an action based on policy distribution.
+        Selects an action from the policy distribution.
 
         Args:
-            state (np.ndarray): Current state.
-            greedy (bool): If True, selects deterministic action (argmax).
+            state (np.ndarray): Current environment state.
+            greedy (bool): If True, selects action deterministically (argmax).
 
         Returns:
-            If greedy=False: Tuple (action, log_prob, value)
-            If greedy=True: Integer action index
+            If greedy=False: Tuple[int, float, float] → (action, log_prob, value)
+            If greedy=True: int → deterministic action index
         """
         state_tensor = torch.FloatTensor(state).unsqueeze(0).to(self.device)
         with torch.no_grad():
@@ -145,35 +143,33 @@ class PPOAgent(DQNAgent):
                         next_state: np.ndarray, done: bool, log_prob: float, 
                         value: float) -> None:
         """
-        Stores transition in PPO on-policy buffer.
+        Stores a transition in the on-policy PPO buffer.
 
         Args:
-            state (np.ndarray): State at time t.
+            state (np.ndarray): Environment state at time t.
             action (int): Action taken.
-            reward (float): Reward received.
-            next_state (np.ndarray): Next state.
-            done (bool): Terminal flag.
-            log_prob (float): Log probability of action.
-            value (float): Estimated value of state.
+            reward (float): Immediate reward received.
+            next_state (np.ndarray): Environment state at time t+1.
+            done (bool): Whether the episode terminated.
+            log_prob (float): Log probability of the action.
+            value (float): Estimated value of the state.
         """
-
         # Store reward
         self.buffer.add(PPOTransition(state, action, reward, next_state, done, log_prob, value))
 
     def compute_gae(self, rewards, values, dones, next_value):
         """
-        Computes Generalized Advantage Estimation (GAE) advantage and returns.
+        Computes Generalized Advantage Estimation (GAE).
 
         Args:
-            rewards (torch.Tensor): Collected rewards.
-            values (torch.Tensor): Predicted state values.
+            rewards (torch.Tensor): Sequence of rewards.
+            values (torch.Tensor): Estimated state values.
             dones (torch.Tensor): Done flags.
-            next_value (float): Bootstrap value for final state.
+            next_value (float): Value of final state (bootstrapped).
 
         Returns:
-            Tuple[torch.Tensor, torch.Tensor]: (advantages, target returns)
+            Tuple[torch.Tensor, torch.Tensor]: (advantages, returns)
         """
-
         # Compute deltas in one vectorized operation
         deltas = rewards + self.gamma * torch.cat([values[1:], torch.tensor([next_value], device=values.device)]) * (1 - dones) - values
         
@@ -191,21 +187,14 @@ class PPOAgent(DQNAgent):
 
     def learn(self) -> Optional[Dict[str, float]]:
         """
-        Performs PPO update based on collected trajectory.
-
-        - Uses clipped surrogate objective.
-        - Uses normalized GAE advantages.
-        - Includes entropy bonus.
-        - Uses value clipping for stable critic updates.
-        - KL divergence based early stopping inside epochs.
+        Performs PPO policy and value network update.
 
         Returns:
             Optional[Dict[str, float]]: Training metrics including:
-                - policy_loss (float)
-                - value_loss (float)
-                - entropy (float)
-                - total_loss (float)
-                - early_stopping (Optional[str])
+                - policy_loss
+                - value_loss
+                - entropy
+                - total_loss
         """
 
         if self.buffer.is_empty():
@@ -221,8 +210,6 @@ class PPOAgent(DQNAgent):
 
         # Compute GAE advantages and returns
         advantages, returns = self.compute_gae(rewards, values, dones, next_value)
-        # Normalize advantages to stabilize policy updates
-        # advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
 
         total_policy_loss, total_value_loss, total_entropy = 0.0, 0.0, 0.0
         early_stopping_message = None
@@ -240,7 +227,7 @@ class PPOAgent(DQNAgent):
             surr2 = torch.clamp(ratio, 1 - self.clip_epsilon, 1 + self.clip_epsilon) * advantages
             actor_loss = -torch.min(surr1, surr2).mean()
 
-            # Value function loss (exactly same as your code — keep as is)
+            # Value function loss 
             values_pred = values_pred.squeeze()
             values_old = values.detach()
 

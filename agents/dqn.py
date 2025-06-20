@@ -1,11 +1,3 @@
-"""
-Deep Q-Network (DQN) implementation.
-
-This module provides the components for building and training a DQN agent,
-including the Q-network model, a replay buffer, and the agent class itself.
-
-"""
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -14,18 +6,28 @@ from agents.buffer import Buffer, Transition
 import random
 from typing import Any, Optional
 
+"""
+Deep Q-Network (DQN) implementation.
+
+This module provides the components for building and training a DQN agent,
+including the Q-network model, a replay buffer, and the agent class itself.
+
+"""
+
 # ----- DQN Model -----
 class DQN(nn.Module):
-    """Deep Q-Network model.
+    """
+    Deep Q-Network model.
 
-    A simple feedforward neural network with two hidden layers.
+    A fully connected feedforward neural network with three hidden layers
+    and layer normalization. Outputs Q-values for each possible action.
 
     Args:
-        state_dim (int): Dimensionality of the state space.
-        action_dim (int): Number of possible actions.
-        hidden_dim (int, optional): Number of units in each hidden layer. Defaults to 128.
+        state_dim (int): Dimensionality of the input state space.
+        action_dim (int): Number of possible discrete actions.
+        hidden_dim (int, optional): Number of hidden units per layer. Defaults to 128.
     """
-    def __init__(self, state_dim: int, action_dim: int, hidden_dim: int = 256):
+    def __init__(self, state_dim: int, action_dim: int, hidden_dim: int = 128):
         super(DQN, self).__init__()
         self.fc1 = nn.Linear(state_dim, hidden_dim)
         self.ln1 = nn.LayerNorm(hidden_dim)
@@ -43,20 +45,24 @@ class DQN(nn.Module):
 
 # ----- DQN Agent -----
 class DQNAgent:
-    """DQN Agent that interacts with and learns from an environment.
+    """
+    DQN Agent that interacts with and learns from an environment.
+
+    Implements experience replay, epsilon-greedy exploration, and soft updates
+    to a target network for training stability.
 
     Args:
         state_dim (int): Dimensionality of the state space.
         action_dim (int): Number of possible actions.
-        hidden_dim (int, optional): Number of units in hidden layers of the DQN. Defaults to 128.
-        buffer_capacity (int, optional): Maximum capacity of the replay buffer. Defaults to 10000.
-        batch_size (int, optional): Batch size for learning. Defaults to 64.
-        gamma (float, optional): Discount factor. Defaults to 0.99.
-        lr (float, optional): Learning rate for the optimizer. Defaults to 1e-3.
-        epsilon_start (float, optional): Initial value for epsilon. Defaults to 1.0.
-        epsilon_end (float, optional): Minimum value for epsilon. Defaults to 0.01.
-        epsilon_decay (float, optional): Decay rate for epsilon. Defaults to 0.995.
-        tau (float, optional): Soft update parameter. Defaults to 0.01
+        hidden_dim (int, optional): Number of units in the hidden layers. Defaults to 128.
+        buffer_capacity (int, optional): Replay buffer size. Defaults to 10000.
+        batch_size (int, optional): Size of each mini-batch used for training. Defaults to 128.
+        gamma (float, optional): Discount factor for future rewards. Defaults to 0.99.
+        lr (float, optional): Learning rate for the optimizer. Defaults to 3e-4.
+        epsilon_start (float, optional): Initial exploration rate for epsilon-greedy strategy. Defaults to 1.0.
+        epsilon_end (float, optional): Minimum value epsilon can decay to. Defaults to 0.01.
+        epsilon_decay (float, optional): Multiplicative factor for epsilon decay after each episode. Defaults to 0.98.
+        tau (float, optional): Soft update coefficient for target network parameters. Defaults to 0.01.
     """
     def __init__(
             self, 
@@ -64,12 +70,12 @@ class DQNAgent:
             action_dim: int, 
             hidden_dim: int = 128, 
             buffer_capacity: int = 10000, 
-            batch_size: int = 64, 
+            batch_size: int = 128, 
             gamma: float = 0.99, 
-            lr: float = 1e-3, 
+            lr: float = 3e-4, 
             epsilon_start: float = 1.0,
             epsilon_end: float = 0.01, 
-            epsilon_decay: float = 0.995,
+            epsilon_decay: float = 0.98,
             tau: float=0.01
         ):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -92,16 +98,15 @@ class DQNAgent:
         self.tau = tau
 
     def select_action(self, state: Any, greedy: bool = False) -> int:
-        """Selects an action using an epsilon-greedy policy.
-
-        With probability epsilon, a random action is chosen (exploration).
-        Otherwise, the action with the highest Q-value is chosen (exploitation).
+        """
+        Selects an action using an epsilon-greedy strategy.
 
         Args:
-            state: The current state from the environment.
+            state (Any): Current state of the environment.
+            greedy (bool, optional): If True, ignores epsilon and always exploits. Defaults to False.
 
         Returns:
-            int: The selected action index.
+            int: Index of the selected action.
         """
         if not greedy and random.random() < self.epsilon:
             return random.randint(0, self.action_dim - 1)  # Explore
@@ -112,25 +117,37 @@ class DQNAgent:
                 return q_values.argmax().item()  # Exploit
 
     def store_experience(self, state: Any, action: int, reward: float, next_state: Any, done: bool) -> None:
-        """Stores an experience tuple in the replay buffer."""
+        """
+        Stores a transition in the replay buffer.
+
+        Args:
+            state (Any): Current state.
+            action (int): Action taken.
+            reward (float): Reward received.
+            next_state (Any): Next state observed.
+            done (bool): Whether the episode terminated.
+        """
         self.buffer.add(Transition(state, action, reward, next_state, done))
 
     def update_epsilon(self) -> None:
-        """Updates the exploration rate epsilon according to its decay schedule."""
+        """
+        Updates the epsilon value based on decay rate.
+        """
         self.epsilon = max(self.epsilon_end, self.epsilon * self.epsilon_decay)
 
     def _compute_loss_for_batch(self, s: torch.Tensor, a: torch.Tensor, r: torch.Tensor, s_next: torch.Tensor, done: torch.Tensor) -> torch.Tensor:
-        """Computes the DQN loss for a given batch of experiences.
+        """
+        Computes the temporal difference loss for a batch of transitions.
 
         Args:
             s (torch.Tensor): Batch of current states.
             a (torch.Tensor): Batch of actions taken.
             r (torch.Tensor): Batch of rewards received.
             s_next (torch.Tensor): Batch of next states.
-            done (torch.Tensor): Batch of done flags (1.0 if terminal, 0.0 otherwise).
+            done (torch.Tensor): Batch of terminal state indicators.
 
         Returns:
-            torch.Tensor: The computed loss tensor.
+            torch.Tensor: Smooth L1 loss between predicted and target Q-values.
         """
         # Q(s, a; θ)
         q_sa = self.q_network(s).gather(1, a.unsqueeze(1)).squeeze(1)
@@ -168,6 +185,8 @@ class DQNAgent:
         return loss.item()
 
     def update_target_network(self) -> None:
-        """Updates the target Q-network."""
+        """
+        Soft updates the target network parameters toward the online network.
+        """
         for target_param, param in zip(self.target_network.parameters(), self.q_network.parameters()):
             target_param.data.copy_(self.tau * param.data + (1.0 - self.tau) * target_param.data)

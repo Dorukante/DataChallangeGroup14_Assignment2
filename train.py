@@ -135,8 +135,8 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run a continuous environment simulation.")
     # Common Arguments
-    parser.add_argument("--level_file", type=str, default="level_1",
-                        help="Name of the level JSON file (without extension). Default: level_1")
+    parser.add_argument("--level_file", type=str, default="warehouse_level_1",
+                        help="Name of the level JSON file (without extension). Default: warehouse_level_1")
     parser.add_argument("--num_episodes", type=int, default=300,
                         help="Number of episodes to train. Default: 300")
     parser.add_argument("--max_steps", type=int, default=3000,

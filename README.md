@@ -44,7 +44,7 @@ python train.py
 
 | Argument | Description | Default |
 |----------|-------------|---------|
-| `--level_file=<name>` | Environment JSON file (without `.json`) | `level_1` |
+| `--level_file=<name>` | Environment JSON file (without `.json`) | `warehouse_level_1` |
 | `--agent=<dqn\|ppo>` | Agent type | `dqn` |
 | `--num_episodes=<int>` | Training episodes | `300` |
 | `--max_steps=<int>` | Maximum steps per episode | `3000` |
@@ -76,7 +76,7 @@ python train.py --agent=ppo --level_file=warehouse_level_2 --num_episodes=500 --
 #### Example: Train DQN agent headless on level 1
 
 ```cmd
-python train.py --agent=dqn --level_file=level1 --num_episodes=200
+python train.py --agent=dqn --level_file=warehouse_level_1 --num_episodes=200
 ```
 
 ---
@@ -121,8 +121,6 @@ root/
 ├── environment/
 │   ├── continuous_environment.py  # Main environment logic
 │   ├── continuous_gui.py          # Pygame-based GUI for visualization
-│   ├── level1.json                # Example environment config
-│   ├── level2.json
 │   ├── warehouse_level_1.json     # Warehouse environment configs
 │   ├── warehouse_level_2.json
 │   └── warehouse_level_3.json
