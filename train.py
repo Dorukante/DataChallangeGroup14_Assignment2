@@ -86,8 +86,10 @@ def main(args):
         Helper.v_print("\nTraining is finished\nStarting evaluation...", args.verbose)
 
         #evaluate the agent
-        env.evaluate_agent(agent=agent,max_steps=max_steps_per_episode,
-                       random_seed=42, file_prefix="post_training_eval_dqn")
+        eval_results = env.evaluate_agent(agent=agent,max_steps=max_steps_per_episode,
+                       random_seed=42)
+        
+        Helper.save_eval_results("dqn", args, eval_results)
         
         if env.test_gui:
             env.gui.close()
@@ -115,8 +117,10 @@ def main(args):
         Helper.v_print("\nTraining is finished\nStarting evaluation...", args.verbose)
 
         #evaluate the agent
-        env.evaluate_agent(agent=agent, max_steps=max_steps_per_episode, random_seed=42,
-                       file_prefix="post_training_eval_ppo")
+        eval_results = env.evaluate_agent(agent=agent,max_steps=max_steps_per_episode,
+                       random_seed=42)
+        
+        Helper.save_eval_results("ppo", args, eval_results)
         
         if env.test_gui:
             env.gui.close()

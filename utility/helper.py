@@ -97,17 +97,27 @@ class Helper:
             json.dump(episode_metrics, f, indent=2)
 
     @staticmethod
-    def save_results(file_name, world_stats):
+    def save_eval_results(agent_type, args, world_stats):
+        """
+        Saves evaluation results to a text file using formatted filename based on agent type and args.
+
+        Args:
+            agent_type (str): The agent type ('dqn' or 'ppo').
+            args: Namespace object containing argument values.
+            world_stats (dict): Dictionary of evaluation statistics.
+        """
         out_dir = Path("results/")
         if not out_dir.exists():
-            warn("Evaluation output directory does not exist. Creating the "
-                "directory.")
+            warn("Evaluation output directory does not exist. Creating the directory.")
             out_dir.mkdir(parents=True, exist_ok=True)
 
-        # Print evaluation results
-        print("Evaluation complete. Results:")
-        # Text file
+        # Construct file name using the argument summary
+        args_summary = Helper.format_args_summary(agent_type, args)
+        file_name = f"{agent_type}_evaluation_results_{args_summary}"
         out_fp = out_dir / f"{file_name}.txt"
+
+        # Save results to text file
+        print("Evaluation complete. Results:")
         with open(out_fp, "w") as f:
             for key, value in world_stats.items():
                 f.write(f"{key}: {value}\n")

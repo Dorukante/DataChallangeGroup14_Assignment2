@@ -7,7 +7,6 @@ import json
 from agents.dqn import DQNAgent
 from tqdm import trange
 from utility.helper import Helper
-from datetime import datetime
 
 Vector2: TypeAlias = Tuple[float, float]
 
@@ -492,25 +491,18 @@ class ContinuousEnvironment:
     def evaluate_agent(self,
                        agent: DQNAgent,
                        max_steps: int = 1000,
-                       show_images: bool = False,
                        agent_start_pos: tuple[int, int] = None,
-                       random_seed: int | float | str | bytes | bytearray = 0,
-                       file_prefix: str = "evaluation"):
+                       random_seed: int | float | str | bytes | bytearray = 0):
         """
         Evaluates a trained agent in the environment.
 
         Args:
             agent (DQNAgent): Trained agent.
             max_steps (int): Max steps per episode.
-            show_images (bool): Whether to display final path image.
             agent_start_pos (tuple[int, int]): Optional start position for agent.
             random_seed (int | float | str | bytes | bytearray): Random seed for reproducibility.
-            file_prefix (str): Prefix for result filenames.
         """
         np.random.seed(random_seed)
-
-        if agent_start_pos is not None:
-            self.start = agent_start_pos
 
         if self.test_gui:
             if self.gui is None:
@@ -557,13 +549,11 @@ class ContinuousEnvironment:
             if done or len(self.current_goals) == 0:
                 break
 
-        self.world_stats["goals_remaining"] = len(self.current_goals)
         self.world_stats["goals_reached"] = len(self.initial_goal_positions) - len(self.current_goals)
         self.world_stats["collision_count"] = self.agent_collided_with_obstacle_count_after
 
-        file_name = f"{file_prefix}__" + datetime.now().strftime("%Y-%m-%d__%H-%M-%S")
+        return self.world_stats
 
-        Helper.save_results(file_name, self.world_stats)
 
 
 
