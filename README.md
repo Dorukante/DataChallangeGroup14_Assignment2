@@ -73,7 +73,7 @@ python train.py
 python train.py --agent=ppo --level_file=warehouse_level_2 --num_episodes=500 --train-gui
 ```
 
-#### Example: Train DQN agent headless on level 1
+#### Example: Train DQN agent headless on warehouse level 1
 
 ```cmd
 python train.py --agent=dqn --level_file=warehouse_level_1 --num_episodes=200
