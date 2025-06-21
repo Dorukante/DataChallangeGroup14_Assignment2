@@ -102,7 +102,6 @@ python train.py --agent=dqn --level_file=warehouse_level_1 --num_episodes=200
 **Evaluation Metrics:**
 - `total_time`: Total simulation time in seconds
 - `collision_count`: Number of collisions with obstacles
-- `goals_remaining`: Number of goals not reached
 - `goals_reached`: Number of goals successfully reached
 
 ---
