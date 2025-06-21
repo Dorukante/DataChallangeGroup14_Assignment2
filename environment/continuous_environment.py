@@ -487,10 +487,7 @@ class ContinuousEnvironment:
             "total_time": 0,
             "collision_count":0,
         }
-    def evaluate_agent(self,
-                       agent: DQNAgent,
-                       max_steps: int = 1000,
-                       random_seed: int | float | str | bytes | bytearray = 0):
+    def evaluate_agent(self, agent: DQNAgent, max_steps: int = 1000, random_seed: int | float | str | bytes | bytearray = 0):
         """
         Evaluates a trained agent in the environment.
 
