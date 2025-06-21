@@ -62,20 +62,12 @@ def main(args):
         sys.exit(1)
 
     if args.agent == "dqn":
-        agent = DQNAgent(
-            state_dim=agent_state.size(),
-            action_dim=env.action_space_size,
-            hidden_dim=args.hidden_dim,
-            buffer_capacity=args.buffer,
-            batch_size=args.batch,
-            gamma=args.gamma,
-            lr=args.lr,
-            epsilon_start=args.epsilon_start,
-            epsilon_end=args.epsilon_end,
-            epsilon_decay=args.epsilon_decay,
-            tau = args.tau
-        )
+        #initiliaze the dqn agent
+        agent = DQNAgent(state_dim=agent_state.size(), action_dim=env.action_space_size, hidden_dim=args.hidden_dim,
+            buffer_capacity=args.buffer, batch_size=args.batch, gamma=args.gamma, lr=args.lr, epsilon_start=args.epsilon_start,
+            epsilon_end=args.epsilon_end, epsilon_decay=args.epsilon_decay, tau = args.tau)
 
+        #train the dqn agent
         results_path = Helper.get_results_path(agent, args, results_path)
         Train.train_dqn_agent(agent, args, env, max_steps_per_episode, episode_metrics)
 
@@ -87,25 +79,19 @@ def main(args):
         #evaluate the agent
         eval_results = env.evaluate_agent(agent=agent,max_steps=max_steps_per_episode, random_seed=42)
         
+        #save the evaluation metrics
         Helper.save_eval_results("dqn", args, eval_results)
         
         if env.test_gui:
             env.gui.close()
 
     elif args.agent == "ppo":
-        agent = PPOAgent(
-            state_dim=agent_state.size(),
-            action_dim=env.action_space_size,
-            hidden_dim=args.hidden_dim,
-            batch_size=args.batch,
-            gamma=args.gamma,
-            lr=args.lr,
-            lam=args.lamda,
-            clip_eps=args.clip_eps,
-            entropy_coeff=args.entropy_coeff,
-            epochs=args.ppo_epochs
-            
-        )
+        #initiliaze the ppo agent
+        agent = PPOAgent(state_dim=agent_state.size(), action_dim=env.action_space_size, hidden_dim=args.hidden_dim,
+            batch_size=args.batch, gamma=args.gamma, lr=args.lr, lam=args.lamda, clip_eps=args.clip_eps,
+            entropy_coeff=args.entropy_coeff, epochs=args.ppo_epochs)
+        
+        #train the ppo agent
         results_path = Helper.get_results_path(agent, args, results_path)
         episode_metrics = Train.train_ppo_agent(agent, args, env, max_steps_per_episode, episode_metrics)
 
@@ -117,6 +103,7 @@ def main(args):
         #evaluate the agent
         eval_results = env.evaluate_agent(agent=agent,max_steps=max_steps_per_episode, random_seed=42)
         
+        #save the evaluation metrics
         Helper.save_eval_results("ppo", args, eval_results)
         
         if env.test_gui:
@@ -161,9 +148,7 @@ if __name__ == "__main__":
     parser.add_argument("--lamda", type=float, default=0.95, help="GAE lambda parameter (PPO only).")
     parser.add_argument("--clip_eps", type=float, default=0.2, help="PPO clipping epsilon.")
     parser.add_argument("--ppo_epochs", type=int, default=4, help="Number of PPO update epochs.")
-    parser.add_argument("--entropy_coeff", type=float, default=0.4, help="Entropy bonus coefficient.")
+    parser.add_argument("--entropy_coeff", type=float, default=0.4, help="Entropy bonus coefficient (PPO only)")
 
     args = parser.parse_args()
     main(args)
-
- 
