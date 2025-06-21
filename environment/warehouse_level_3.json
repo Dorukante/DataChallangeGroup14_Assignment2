@@ -1,0 +1,94 @@
+{
+    "name": "warehouse_level_3",
+    "extents": [1000, 800],
+    "start_position": [80, 400],
+    "goals": [
+        [900, 400]
+    ],
+    "obstacles": [{
+            "position": [150, 100],
+            "size": [100, 100],
+            "name": "shelf_A1"
+        },
+        {
+            "position": [150, 250],
+            "size": [100, 100],
+            "name": "shelf_A2"
+        },
+        {
+            "position": [150, 400],
+            "size": [100, 100],
+            "name": "shelf_A3"
+        },
+        {
+            "position": [150, 550],
+            "size": [100, 100],
+            "name": "shelf_A4"
+        },
+        {
+            "position": [350, 100],
+            "size": [100, 100],
+            "name": "shelf_B1"
+        },
+        {
+            "position": [350, 250],
+            "size": [100, 100],
+            "name": "shelf_B2"
+        },
+        {
+            "position": [350, 400],
+            "size": [100, 100],
+            "name": "shelf_B3"
+        },
+        {
+            "position": [350, 550],
+            "size": [100, 100],
+            "name": "shelf_B4"
+        },
+        {
+            "position": [550, 150],
+            "size": [100, 100],
+            "name": "shelf_C1"
+        },
+        {
+            "position": [550, 350],
+            "size": [100, 100],
+            "name": "shelf_C2"
+        },
+        {
+            "position": [550, 550],
+            "size": [100, 100],
+            "name": "shelf_C3"
+        },
+        {
+            "position": [750, 100],
+            "size": [100, 150],
+            "name": "shelf_D1"
+        },
+        {
+            "position": [750, 350],
+            "size": [100, 150],
+            "name": "shelf_D2"
+        },
+        {
+            "position": [750, 600],
+            "size": [100, 150],
+            "name": "shelf_D3"
+        },
+        {
+            "position": [0, 325],
+            "size": [50, 150],
+            "name": "loading_dock"
+        },
+        {
+            "position": [950, 0],
+            "size": [50, 800],
+            "name": "packing_area"
+        },
+        {
+            "position": [450, 700],
+            "size": [50, 50],
+            "name": "forklift"
+        }
+    ]
+}
