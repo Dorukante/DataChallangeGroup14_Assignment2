@@ -84,7 +84,7 @@ python train.py --agent=dqn --level_file=warehouse_level_1 --num_episodes=200
 ## Results and Outputs
 
 - Training metrics are saved as `.json` files in the `results/` directory, named according to agent type, environment, and hyperparameters.
-- Evaluation summaries are saved as `.txt` files in `results/`, named according to agent type and datetime.
+- Evaluation summaries are saved as `.txt` files in `results/`, named according to agent type, environment, and hyperparameters.
 
 ### Metrics Explanation
 
