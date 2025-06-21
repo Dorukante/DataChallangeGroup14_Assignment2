@@ -3,7 +3,6 @@ from utility.helper import Helper
 import argparse
 import sys
 import numpy as np
-import ast
 import os
 
 try:
@@ -86,8 +85,7 @@ def main(args):
         Helper.v_print("\nTraining is finished\nStarting evaluation...", args.verbose)
 
         #evaluate the agent
-        eval_results = env.evaluate_agent(agent=agent,max_steps=max_steps_per_episode,
-                       random_seed=42)
+        eval_results = env.evaluate_agent(agent=agent,max_steps=max_steps_per_episode, random_seed=42)
         
         Helper.save_eval_results("dqn", args, eval_results)
         
@@ -117,8 +115,7 @@ def main(args):
         Helper.v_print("\nTraining is finished\nStarting evaluation...", args.verbose)
 
         #evaluate the agent
-        eval_results = env.evaluate_agent(agent=agent,max_steps=max_steps_per_episode,
-                       random_seed=42)
+        eval_results = env.evaluate_agent(agent=agent,max_steps=max_steps_per_episode, random_seed=42)
         
         Helper.save_eval_results("ppo", args, eval_results)
         

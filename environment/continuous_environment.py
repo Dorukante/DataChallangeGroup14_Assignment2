@@ -6,7 +6,6 @@ from collections import deque
 import json
 from agents.dqn import DQNAgent
 from tqdm import trange
-from utility.helper import Helper
 
 Vector2: TypeAlias = Tuple[float, float]
 
@@ -491,7 +490,6 @@ class ContinuousEnvironment:
     def evaluate_agent(self,
                        agent: DQNAgent,
                        max_steps: int = 1000,
-                       agent_start_pos: tuple[int, int] = None,
                        random_seed: int | float | str | bytes | bytearray = 0):
         """
         Evaluates a trained agent in the environment.
