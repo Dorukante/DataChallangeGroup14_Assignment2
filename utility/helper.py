@@ -46,6 +46,7 @@ class Helper:
                 f"_eps_s{args.epsilon_start}"
                 f"_eps_e{args.epsilon_end}"
                 f"_eps_d{args.epsilon_decay}"
+                f"_tau{args.tau}"
             )
         elif agent_type == "ppo":
             return (
