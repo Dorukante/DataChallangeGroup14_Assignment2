@@ -1,4 +1,5 @@
-from environment.continuous_environment import ContinuousEnvironment, AgentState, RaySensorNoType
+from environment.continuous_environment import ContinuousEnvironment, AgentState
+from environment.environment_entities.sensors import RaySensorNoType
 from utility.helper import Helper
 import argparse
 import sys
@@ -34,18 +35,15 @@ def main(args):
 
     # define what kind of sensors the agent has
     agent_state: AgentState = AgentState(
-
-        sensors = [
+        sensors=[
             RaySensorNoType(ray_angle=0, ray_length=600, verbose=args.verbose),
             RaySensorNoType(ray_angle=np.pi * 0.5, ray_length=600, verbose=args.verbose),
             RaySensorNoType(ray_angle=np.pi * -0.5, ray_length=600, verbose=args.verbose),
             RaySensorNoType(ray_angle=np.pi, ray_length=600, verbose=args.verbose),
-
             RaySensorNoType(ray_angle=np.pi * 1.25, ray_length=600, verbose=args.verbose),
             RaySensorNoType(ray_angle=np.pi * 0.75, ray_length=600, verbose=args.verbose),
             RaySensorNoType(ray_angle=np.pi * 0.25, ray_length=600, verbose=args.verbose),
             RaySensorNoType(ray_angle=np.pi * 1.75, ray_length=600, verbose=args.verbose),
-
         ]
     )
     Helper.v_print(f"Agent State space is size: {agent_state.size()}", args.verbose)
