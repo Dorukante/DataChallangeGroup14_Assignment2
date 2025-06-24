@@ -12,12 +12,13 @@ from pathlib import Path
 ROOT         = Path(__file__).resolve().parent
 TRAIN_SCRIPT = ROOT / "train.py"
 RESULTS_DIR  = ROOT / "results"
-EVAL_NAME    = "eval_metrics.csv"          # produced by Helper.save_eval_results
+ENV_DIR = ROOT / "environment"
+EVAL_NAME = "eval_metrics.csv"
 
 LEVEL_FILES  = [
-    "warehouse_level_1.json",
-    "warehouse_level_2.json",
-    "warehouse_level_3.json",
+    ENV_DIR / "warehouse_level_1",
+    ENV_DIR / "warehouse_level_2",
+    ENV_DIR / "warehouse_level_3",
 ]
 LEVEL_NAMES = ["level1", "level2", "level3"]
 
