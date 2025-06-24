@@ -1,15 +1,8 @@
 #!/usr/bin/env python
 """
-experiment_runner.py  –  final version per 23 June 2025 request
-Runs three hyper-parameter sweeps (shared, DQN-specific, PPO-specific) and
-aggregates evaluation metrics into all_results.csv.
-
-Assumptions
------------
-• train.py must write evaluation CSV to results/<agent>/.../eval_metrics.csv
-  with at least: mean_return, success_rate, steps, time_min  (wall-clock mins).
-• train.py accepts every CLI flag we pass (lr, batch, gamma, etc.).
-• No --seed flag is sent; each run uses whatever randomness train.py chooses.
+experiment_runner.py  – 23 June 2025, with per-level results, part-wise CSVs.
+Runs three hyper-parameter sweeps (shared, DQN-specific, PPO-specific) on three warehouse levels,
+and aggregates evaluation metrics into results/part#/part#.csv.
 """
 
 import csv, itertools, os, subprocess, sys, time
@@ -20,10 +13,24 @@ ROOT         = Path(__file__).resolve().parent
 TRAIN_SCRIPT = ROOT / "train.py"
 RESULTS_DIR  = ROOT / "results"
 EVAL_NAME    = "eval_metrics.csv"          # produced by Helper.save_eval_results
-AGG_CSV      = ROOT / "all_results.csv"
+
+LEVEL_FILES  = [
+    "warehouse_level_1.json",
+    "warehouse_level_2.json",
+    "warehouse_level_3.json",
+]
+LEVEL_NAMES = ["level1", "level2", "level3"]
+
+# Per-part CSV files
+PART_CSVS = {
+    "part1": RESULTS_DIR / "part1" / "part1.csv",
+    "part2": RESULTS_DIR / "part2" / "part2.csv",
+    "part3": RESULTS_DIR / "part3" / "part3.csv",
+}
+
 RESULT_KEYS  = ["mean_return", "success_rate", "steps", "time_min"]
 
-# sweep values – updated ---------------------------------------------------- #
+# sweep values – same as before
 LR_VALUES      = [1e-4, 3e-4, 5e-4, 1e-3, 3e-3]
 BATCH_VALUES   = [64, 128, 256, 512, 1024]
 GAMMA_VALUES   = [0.90, 0.95, 0.99, 0.995, 0.999]
@@ -39,42 +46,32 @@ LAMDA_VALS     = [0.90, 0.93, 0.95, 0.97, 0.99]     # PPO only
 PPO_EPOCH_VALS = [2, 4, 6, 8, 10]                  # PPO only
 
 # ───────────────────────── helpers ───────────────────────────── #
-def newest_eval(dir_root: Path) -> Path:
-    files = list(dir_root.rglob(EVAL_NAME))
-    if not files:
-        raise FileNotFoundError(f"No {EVAL_NAME} under {dir_root}")
-    return max(files, key=lambda p: p.stat().st_mtime)
-
 def parse_eval(path: Path) -> dict:
     with path.open() as f:
         row = next(csv.DictReader(f))
         return {k: float(row[k]) for k in RESULT_KEYS if k in row}
 
-def row_exists(id_fields: dict) -> bool:
-    if not AGG_CSV.exists():
-        return False
-    with AGG_CSV.open() as f:
-        rdr = csv.DictReader(f)
-        return any(all(r.get(k) == str(v) for k, v in id_fields.items()) for r in rdr)
-
-def save_row(row: dict):
-    write_hdr = not AGG_CSV.exists()
-    with AGG_CSV.open("a", newline="") as f:
+def save_row(row: dict, csv_file: Path):
+    write_hdr = not csv_file.exists()
+    with csv_file.open("a", newline="") as f:
         w = csv.DictWriter(f, fieldnames=row.keys())
         if write_hdr:
             w.writeheader()
         w.writerow(row)
 
-def run_cfg(agent: str, part: str, params: dict):
-    base_id = {"part": part, "agent": agent, **params}
-    if row_exists(base_id):
-        print(f"• Skipping (done) {base_id}")
-        return
-
+def run_cfg(agent: str, part: str, params: dict, level_file: str, level_name: str):
+    # Only include swept params and common fields
+    out_row = {
+        "agent": agent,
+        "part": part,
+        "level": level_name,
+        **params,
+    }
+    # Assemble command
     cmd = [
         sys.executable, str(TRAIN_SCRIPT),
         "--agent", agent,
-        "--level_file", "warehouse_level_1",
+        "--level_file", level_file,
         "--num_episodes", "300",
         "--max_steps", "3000",
         "--test-gui"
@@ -86,56 +83,64 @@ def run_cfg(agent: str, part: str, params: dict):
     subprocess.run(cmd, check=True)
     runtime = (time.time() - t0) / 60.0
 
-    eval_csv = newest_eval(RESULTS_DIR / agent)
+    # Find latest eval_metrics.csv in agent's results subdir
+    eval_dir = RESULTS_DIR / agent
+    eval_csv = max(list(eval_dir.rglob(EVAL_NAME)), key=lambda p: p.stat().st_mtime)
     metrics  = parse_eval(eval_csv)
-    metrics["time_min"] = runtime
-    save_row({**base_id, **metrics})
-    print("✓ appended to all_results.csv")
+    out_row.update(metrics)
+    out_row["time_min"] = runtime
+    return out_row
 
 # ──────────────────── sweep generators ───────────────────────── #
 def part1_shared():
+    # Only sweep SHARED params: lr, batch, gamma, hidden_dim
     for agent in ["dqn", "ppo"]:
         for lr in LR_VALUES:
-            yield agent, "part1_lr", {"lr": lr}
+            yield agent, {"lr": lr}, "part1"
         for batch in BATCH_VALUES:
-            yield agent, "part1_batch", {"batch": batch}
+            yield agent, {"batch": batch}, "part1"
         for gamma in GAMMA_VALUES:
-            yield agent, "part1_gamma", {"gamma": gamma}
+            yield agent, {"gamma": gamma}, "part1"
         for hidden in HIDDEN_VALUES:
-            yield agent, "part1_hidden", {"hidden_dim": hidden}
-        for buf in BUFFER_VALUES:
-            yield agent, "part1_buffer", {"buffer": buf}
+            yield agent, {"hidden_dim": hidden}, "part1"
 
 def part2_dqn():
     agent = "dqn"
     for eps in EPS_DECAY_VALS:
-        yield agent, "part2_eps_decay", {"epsilon_decay": eps}
+        yield agent, {"epsilon_decay": eps}, "part2"
     for tau in TAU_VALS:
-        yield agent, "part2_tau", {"tau": tau}
+        yield agent, {"tau": tau}, "part2"
+    for buf in BUFFER_VALUES:
+        yield agent, {"buffer": buf}, "part2"
 
 def part3_ppo():
     agent = "ppo"
     for ce in CLIP_EPS_VALS:
-        yield agent, "part3_clip_eps", {"clip_eps": ce}
+        yield agent, {"clip_eps": ce}, "part3"
     for ent in ENTROPY_VALS:
-        yield agent, "part3_entropy", {"entropy_coeff": ent}
+        yield agent, {"entropy_coeff": ent}, "part3"
     for lam in LAMDA_VALS:
-        yield agent, "part3_lamda", {"lamda": lam}
+        yield agent, {"lamda": lam}, "part3"
     for pe in PPO_EPOCH_VALS:
-        yield agent, "part3_epochs", {"ppo_epochs": pe}
+        yield agent, {"ppo_epochs": pe}, "part3"
 
 # ─────────────────────────── main ────────────────────────────── #
 if __name__ == "__main__":
     try:
-        for agent, part, params in itertools.chain(
+        for agent, params, part in itertools.chain(
             part1_shared(), part2_dqn(), part3_ppo()
         ):
-            print(f"\n>>> {part} | {agent} | {params}")
-            try:
-                run_cfg(agent, part, params)
-            except subprocess.CalledProcessError as e:
-                print(f"✗ failed (exit {e.returncode}) – continuing…")
-            except Exception as e:
-                print(f"✗ unexpected error: {e} – continuing…")
+            for level_file, level_name in zip(LEVEL_FILES, LEVEL_NAMES):
+                print(f"\n>>> {part} | {agent} | {params} | {level_name}")
+                try:
+                    row = run_cfg(agent, part, params, level_file, level_name)
+                    part_csv = PART_CSVS[part]
+                    part_csv.parent.mkdir(exist_ok=True, parents=True)
+                    save_row(row, part_csv)
+                    print(f"✓ appended to {part_csv}")
+                except subprocess.CalledProcessError as e:
+                    print(f"✗ failed (exit {e.returncode}) – continuing…")
+                except Exception as e:
+                    print(f"✗ unexpected error: {e} – continuing…")
     except KeyboardInterrupt:
         print("\nInterrupted – partial results kept.")
