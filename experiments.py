@@ -12,12 +12,12 @@ from pathlib import Path
 ROOT         = Path(__file__).resolve().parent
 TRAIN_SCRIPT = ROOT / "train.py"
 RESULTS_DIR  = ROOT / "results"
-EVAL_NAME    = "eval_metrics.csv"          # produced by Helper.save_eval_results
+EVAL_NAME    = "eval_metrics.csv"
 
 LEVEL_FILES  = [
-    "warehouse_level_1.json",
-    "warehouse_level_2.json",
-    "warehouse_level_3.json",
+    "warehouse_level_1",
+    "warehouse_level_2",
+    "warehouse_level_3",
 ]
 LEVEL_NAMES = ["level1", "level2", "level3"]
 
@@ -128,7 +128,10 @@ def part3_ppo():
 if __name__ == "__main__":
     try:
         for agent, params, part in itertools.chain(
-            part1_shared(), part2_dqn(), part3_ppo()
+            # comment the part you don't want to run
+            part1_shared(),
+            part2_dqn(),
+            part3_ppo()
         ):
             for level_file, level_name in zip(LEVEL_FILES, LEVEL_NAMES):
                 print(f"\n>>> {part} | {agent} | {params} | {level_name}")
