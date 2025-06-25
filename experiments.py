@@ -5,7 +5,7 @@ Runs three hyper-parameter sweeps (shared, DQN-specific, PPO-specific) on three 
 and aggregates evaluation metrics into results/part#/part#.csv.
 """
 
-import csv, itertools, os, subprocess, sys, time
+import csv, itertools, subprocess, sys, time
 from pathlib import Path
 
 # ───────────────────────── constants ─────────────────────────── #
@@ -35,8 +35,8 @@ LR_VALUES      = [1e-4, 3e-4, 5e-4, 1e-3, 3e-3]
 BATCH_VALUES   = [64, 128, 256, 512, 1024]
 GAMMA_VALUES   = [0.90, 0.95, 0.99, 0.995, 0.999]
 HIDDEN_VALUES  = [64, 128, 256, 512, 1024]
-BUFFER_VALUES  = [5000, 10000, 20000, 50000, 100000]
 
+BUFFER_VALUES  = [5000, 10000, 20000, 50000, 100000] # DQN only
 EPS_DECAY_VALS = [0.95, 0.97, 0.98, 0.99, 0.995]   # DQN only
 TAU_VALS       = [0.005, 0.01, 0.02, 0.05, 0.1]    # DQN only
 
@@ -85,7 +85,11 @@ def run_cfg(agent: str, part: str, params: dict, level_file: str, level_name: st
 
     # Find latest eval_metrics.csv in agent's results subdir
     eval_dir = RESULTS_DIR / agent
-    eval_csv = max(list(eval_dir.rglob(EVAL_NAME)), key=lambda p: p.stat().st_mtime)
+    eval_files = list(eval_dir.rglob(EVAL_NAME))
+    if not eval_files:
+        print(f"✗ No {EVAL_NAME} found for agent '{agent}' in '{eval_dir}' after run. Skipping this configuration.")
+        return  # or: raise RuntimeError("...")
+    eval_csv = max(eval_files, key=lambda p: p.stat().st_mtime)
     metrics  = parse_eval(eval_csv)
     out_row.update(metrics)
     out_row["time_min"] = runtime
@@ -128,9 +132,9 @@ def part3_ppo():
 if __name__ == "__main__":
     try:
         for agent, params, part in itertools.chain(
-            # comment the part you don't want to run
-            part1_shared(),
-            part2_dqn(),
+            # uncomment the parts you want to run
+            # part1_shared(),
+            # part2_dqn(),
             part3_ppo()
         ):
             for level_file, level_name in zip(LEVEL_FILES, LEVEL_NAMES):
@@ -139,11 +143,13 @@ if __name__ == "__main__":
                     row = run_cfg(agent, part, params, level_file, level_name)
                     part_csv = PART_CSVS[part]
                     part_csv.parent.mkdir(exist_ok=True, parents=True)
-                    save_row(row, part_csv)
-                    print(f"✓ appended to {part_csv}")
+                    if row is not None:
+                        save_row(row, part_csv)
+                        print(f"✓ appended to {part_csv}")
                 except subprocess.CalledProcessError as e:
                     print(f"✗ failed (exit {e.returncode}) – continuing…")
                 except Exception as e:
                     print(f"✗ unexpected error: {e} – continuing…")
     except KeyboardInterrupt:
         print("\nInterrupted – partial results kept.")
+
