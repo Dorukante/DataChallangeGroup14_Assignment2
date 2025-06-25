@@ -128,6 +128,7 @@ def part3_ppo():
     for pe in PPO_EPOCH_VALS:
         yield agent, {"ppo_epochs": pe}, "part3"
 
+
 # ─────────────────────────── main ────────────────────────────── #
 if __name__ == "__main__":
     try:
@@ -135,7 +136,7 @@ if __name__ == "__main__":
             # uncomment the parts you want to run
             # part1_shared(),
             # part2_dqn(),
-            part3_ppo()
+            # part3_ppo(),
         ):
             for level_file, level_name in zip(LEVEL_FILES, LEVEL_NAMES):
                 print(f"\n>>> {part} | {agent} | {params} | {level_name}")
