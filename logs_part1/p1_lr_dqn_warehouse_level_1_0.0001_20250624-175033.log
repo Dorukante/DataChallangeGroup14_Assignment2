@@ -1,23 +1,0 @@
-pygame 2.6.1 (SDL 2.28.4, Python 3.11.11)
-Hello from the pygame community. https://www.pygame.org/contribute.html
-Training DQN:   0%|          | 0/300 [00:00<?, ?it/s]Training DQN:   0%|          | 0/300 [00:00<?, ?it/s, eps=1]Training DQN:   0%|          | 0/300 [00:03<?, ?it/s, eps=0.98]Training DQN:   0%|          | 1/300 [00:03<16:58,  3.41s/it, eps=0.98]Training DQN:   0%|          | 1/300 [00:06<16:58,  3.41s/it, eps=0.96]Training DQN:   1%|          | 2/300 [00:06<16:50,  3.39s/it, eps=0.96]Training DQN:   1%|          | 2/300 [00:07<16:50,  3.39s/it, eps=0.941]Training DQN:   1%|1         | 3/300 [00:07<10:05,  2.04s/it, eps=0.941]Training DQN:   1%|1         | 3/300 [00:10<10:05,  2.04s/it, eps=0.922]Training DQN:   1%|1         | 4/300 [00:10<12:35,  2.55s/it, eps=0.922]Training DQN:   1%|1         | 4/300 [00:13<12:35,  2.55s/it, eps=0.904]Training DQN:   2%|1         | 5/300 [00:13<13:47,  2.81s/it, eps=0.904]Training DQN:   2%|1         | 5/300 [00:14<13:47,  2.81s/it, eps=0.886]Training DQN:   2%|2         | 6/300 [00:14<10:56,  2.23s/it, eps=0.886]Training DQN:   2%|2         | 6/300 [00:17<10:56,  2.23s/it, eps=0.868]Training DQN:   2%|2         | 7/300 [00:17<10:51,  2.22s/it, eps=0.868]Training DQN:   2%|2         | 7/300 [00:20<10:51,  2.22s/it, eps=0.851]Training DQN:   3%|2         | 8/300 [00:20<12:07,  2.49s/it, eps=0.851]Training DQN:   3%|2         | 8/300 [00:21<13:22,  2.75s/it, eps=0.851]
-Traceback (most recent call last):
-  File "C:\M_DSAI_Notes\Q4\DIC\DataChallangeGroup14_Assignment2\train.py", line 155, in <module>
-    main(args)
-  File "C:\M_DSAI_Notes\Q4\DIC\DataChallangeGroup14_Assignment2\train.py", line 72, in main
-    Train.train_dqn_agent(agent, args, env, max_steps_per_episode, episode_metrics)
-  File "C:\M_DSAI_Notes\Q4\DIC\DataChallangeGroup14_Assignment2\agents\train_agents.py", line 140, in train_dqn_agent
-    next_state, done = env.step(action, render=env.train_gui)
-                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\M_DSAI_Notes\Q4\DIC\DataChallangeGroup14_Assignment2\environment\continuous_environment.py", line 452, in step
-    self.agent_state.update_sensors(self.agent_body, self.space)
-  File "C:\M_DSAI_Notes\Q4\DIC\DataChallangeGroup14_Assignment2\environment\continuous_environment.py", line 148, in update_sensors
-    sensor_values = sensor.update(agent_body, space)
-                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\M_DSAI_Notes\Q4\DIC\DataChallangeGroup14_Assignment2\environment\continuous_environment.py", line 102, in update
-    values = super().update(agentbody, space)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\M_DSAI_Notes\Q4\DIC\DataChallangeGroup14_Assignment2\environment\continuous_environment.py", line 95, in update
-    return np.array([self.sensed_object_distance, self.sensed_object_type])
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-KeyboardInterrupt
