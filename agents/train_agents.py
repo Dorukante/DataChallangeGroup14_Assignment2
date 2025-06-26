@@ -2,25 +2,13 @@ from tqdm import tqdm
 from agents.reward_function import Reward_Func
 import sys
 import numpy as np
-import pygame
+from utility.helper import Helper
 
 class Train():
 
     """
     Class that trains the PPO and DQN agents
     """
-
-    @staticmethod
-    def check_pause(env):
-        """Check if GUI is paused and wait if needed."""
-        if env.train_gui and env.gui and hasattr(env.gui, 'paused'):
-            while env.gui.paused and not env.gui.step:
-                env.gui.render(env)
-                # Break if window closed
-                if not pygame.display.get_init():
-                    return False
-        return True
-
     @staticmethod
     def train_ppo_agent(agent, args, env, max_steps_per_episode, episode_metrics):
         """
@@ -56,7 +44,7 @@ class Train():
                 episode_steps += 1
                 
                 # Check pause state
-                if not Train.check_pause(env):
+                if not Helper.check_pause(env):
                     break
                     
                 action, log_prob, value = agent.select_action(continuous_state)
@@ -155,7 +143,7 @@ class Train():
                 step_idx += 1
                 
                 # Check pause state
-                if not Train.check_pause(env):
+                if not Helper.check_pause(env):
                     break
                     
                 action = agent.select_action(continuous_state)
