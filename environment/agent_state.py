@@ -1,13 +1,6 @@
 import numpy as np
 import pymunk
-from typing import Tuple, TypeAlias, List, Dict
-from environment.continuous_gui import ContinuousGUI
 from environment.environment_config import * # only contains type aliases and constants
-from environment.environment_entities.sensors import AgentSensor
-from collections import deque
-import json
-from agents.dqn import DQNAgent
-from tqdm import trange
 
 
 class AgentState:

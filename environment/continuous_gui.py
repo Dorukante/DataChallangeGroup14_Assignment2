@@ -5,7 +5,7 @@ from pygame import gfxdraw
 import pygame
 import sys
 from environment.environment_config import *
-from typing import Optional, List, Tuple
+from typing import List, Tuple
 
 
 class ContinuousGUI:
