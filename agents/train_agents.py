@@ -2,13 +2,13 @@ from tqdm import tqdm
 from agents.reward_function import Reward_Func
 import sys
 import numpy as np
+from utility.helper import Helper
 
 class Train():
 
     """
     Class that trains the PPO and DQN agents
     """
-
     @staticmethod
     def train_ppo_agent(agent, args, env, max_steps_per_episode, episode_metrics):
         """
@@ -42,6 +42,11 @@ class Train():
 
             while not done and episode_steps < max_steps_per_episode:
                 episode_steps += 1
+                
+                # Check pause state
+                if not Helper.check_pause(env):
+                    break
+                    
                 action, log_prob, value = agent.select_action(continuous_state)
 
                 try:
@@ -136,6 +141,11 @@ class Train():
 
             for env_step_idx in range(max_steps_per_episode):
                 step_idx += 1
+                
+                # Check pause state
+                if not Helper.check_pause(env):
+                    break
+                    
                 action = agent.select_action(continuous_state)
                 next_state, done = env.step(action, render=env.train_gui)
                 reward = Reward_Func.reward_func(env, continuous_state, action, next_state, done)
