@@ -132,7 +132,6 @@ if __name__ == "__main__":
     # Shared hyperparameters
     parser.add_argument("--gamma", type=float, default=0.99, help="Discount factor (gamma).")
     parser.add_argument("--lr", type=float, default=3e-4, help="Learning rate.")
-    parser.add_argument("--buffer", type=int, default=10000, help="Replay buffer capacity (only used for DQN).")
     parser.add_argument("--batch", type=int, default=128, help="Batch size for learning.")
     parser.add_argument("--hidden_dim", type=int, default=128, help="Hidden layer size.")
 
@@ -141,6 +140,8 @@ if __name__ == "__main__":
     parser.add_argument("--epsilon_end", type=float, default=0.001, help="Final epsilon (DQN only).")
     parser.add_argument("--epsilon_decay", type=float, default=0.98, help="Epsilon decay rate (DQN only).")
     parser.add_argument("--tau", type=float, default=0.01, help="Soft update tau")
+    parser.add_argument("--buffer", type=int, default=10000, help="Replay buffer capacity (DQN only).")
+
 
     # PPO specific
     parser.add_argument("--lamda", type=float, default=0.95, help="GAE lambda parameter (PPO only).")
