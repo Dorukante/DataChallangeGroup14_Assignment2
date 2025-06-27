@@ -1,6 +1,6 @@
 # Data Challange - Assignment 2 [Group14]
 
-A reinforcement learning framework for training and evaluating DQN and PPO agents in a continuous 2D environment with obstacles and goals. The project supports both headless and GUI-based training/evaluation, and provides detailed metrics and results output.
+A reinforcement learning framework for training and evaluating DQN and PPO agents in a continuous 2D environment with obstacles and goals. The project supports both headless and GUI-based training/evaluation, with an enhanced visualization system for better debugging and monitoring.
 
 ---
 
@@ -35,37 +35,39 @@ pip install -r requirements.txt
 The main entry point is `train.py`, which supports both DQN and PPO agents, multiple environment levels, and various training/evaluation options.
 
 ### Basic usage
+
 Running the file without additional arguments will trigger all default values (if applicable).
+
 ```cmd
 python train.py
 ```
 
 ### Key Command-Line Arguments
 
-| Argument | Description | Default |
-|----------|-------------|---------|
-| `--level_file=<name>` | Environment JSON file (without `.json`) | `warehouse_level_1` |
-| `--agent=<dqn\|ppo>` | Agent type | `dqn` |
-| `--num_episodes=<int>` | Training episodes | `300` |
-| `--max_steps=<int>` | Maximum steps per episode | `3000` |
-| `--train-gui` | Show GUI during training | `False` |
-| `--test-gui` | Show GUI during evaluation | `False` |
-| `--verbose` | Print detailed logs | `False` |
+| Argument                 | Description                               | Default               |
+| ------------------------ | ----------------------------------------- | --------------------- |
+| `--level_file=<name>`  | Environment JSON file (without `.json`) | `warehouse_level_1` |
+| `--agent=<dqn\|ppo>`    | Agent type                                | `dqn`               |
+| `--num_episodes=<int>` | Training episodes                         | `300`               |
+| `--max_steps=<int>`    | Maximum steps per episode                 | `3000`              |
+| `--train-gui`          | Show GUI during training                  | `False`             |
+| `--test-gui`           | Show GUI during evaluation                | `False`             |
+| `--verbose`            | Print detailed logs                       | `False`             |
 
-| DQN Arguments | Description | Default |
-|----------|-------------|---------|
-| `--epsilon_start=<float>` | Initial epsilon value | `1.0` |
-| `--epsilon_end=<float>` | Final epsilon value | `0.001` |
-| `--epsilon_decay=<float>` | Epsilon decay rate | `0.98` |
-| `--buffer=<int>` | Replay buffer size | `10000` |
-| `--tau=<float>` | Target network soft update parameter | `0.01` |
+| DQN Arguments               | Description                          | Default   |
+| --------------------------- | ------------------------------------ | --------- |
+| `--epsilon_start=<float>` | Initial epsilon value                | `1.0`   |
+| `--epsilon_end=<float>`   | Final epsilon value                  | `0.001` |
+| `--epsilon_decay=<float>` | Epsilon decay rate                   | `0.98`  |
+| `--buffer=<int>`          | Replay buffer size                   | `10000` |
+| `--tau=<float>`           | Target network soft update parameter | `0.01`  |
 
-| PPO Arguments | Description | Default |
-|----------|-------------|---------|
-| `--lamda=<float>` | GAE lambda parameter | `0.95` |
-| `--clip_eps=<float>` | PPO clipping epsilon | `0.2` |
-| `--ppo_epochs=<int>` | Number of PPO update epochs | `4` |
-| `--entropy_coeff=<float>` | Entropy bonus coefficient | `0.4` |
+| PPO Arguments               | Description                 | Default  |
+| --------------------------- | --------------------------- | -------- |
+| `--lamda=<float>`         | GAE lambda parameter        | `0.95` |
+| `--clip_eps=<float>`      | PPO clipping epsilon        | `0.2`  |
+| `--ppo_epochs=<int>`      | Number of PPO update epochs | `4`    |
+| `--entropy_coeff=<float>` | Entropy bonus coefficient   | `0.4`  |
 
 #### Example: Train PPO agent with GUI on warehouse level 2
 
@@ -81,6 +83,33 @@ python train.py --agent=dqn --level_file=warehouse_level_1 --num_episodes=200
 
 ---
 
+## Enhanced GUI Features
+
+The GUI has been significantly enhanced for better visualization and control:
+
+### Visual Improvements
+
+- **Collision flash animation** when agent hits obstacles
+- **Agent path trail** showing movement history with fading effect
+- **Color-coded metrics** (green/orange/red for collision counts)
+- **Enhanced agent visualization** with directional indicator
+
+### Interactive Controls
+
+- **Working Pause/Resume**: Pauses the simulation
+- **Step-by-step mode**: Advance simulation one frame at a time while paused
+- **Toggle buttons**:
+  - Show/hide sensor rays
+  - Show/hide path trail
+  - Show/hide obstacle labels
+
+### Improved Information Panel
+
+- **Distance traveled** tracking
+- **Agent status** display (Active/Paused/Complete)
+
+---
+
 ## Results and Outputs
 
 - Training metrics are saved as `.json` files in the `results/` directory, named according to agent type, environment, and hyperparameters.
@@ -89,6 +118,7 @@ python train.py --agent=dqn --level_file=warehouse_level_1 --num_episodes=200
 ### Metrics Explanation
 
 **Training Metrics:**
+
 - `episode`: Episode number
 - `avg_reward_per_step`: Average reward received per step in the episode
 - `episode_length`: Number of steps taken in the episode
@@ -100,26 +130,33 @@ python train.py --agent=dqn --level_file=warehouse_level_1 --num_episodes=200
 - `total_loss`: Combined loss value **(PPO agent)**
 
 **Evaluation Metrics:**
+
 - `total_time`: Total simulation time in seconds
 - `collision_count`: Number of collisions with obstacles
 - `goals_reached`: Number of goals successfully reached
 
 ---
+
 ## Project Structure
 
 ```
 root/
 │
 ├── agents/
+│   ├── buffer.py           # Buffers
 │   ├── dqn.py              # DQN agent and Q-network
 │   ├── ppo.py              # PPO agent and Actor-Critic network
-│   ├── buffer.py           # Buffers
 │   ├── reward_function.py  # Reward calculation logic
-│   └── train_agents.py     # Training loops for agents
+│   └── train_agents.py     # Training loops for agents (with pause support)
 │
 ├── environment/
+│   ├── environment_entities/      # Helper classes for environment objects
+│   │   ├── goal.py               # Goal object implementation
+│   │   └── sensors.py            # Ray sensor implementations
+│   ├── agent_state.py             # Implements the state the agent receives from the environment
 │   ├── continuous_environment.py  # Main environment logic
-│   ├── continuous_gui.py          # Pygame-based GUI for visualization
+│   ├── continuous_gui.py          # Enhanced Pygame GUI with interactive controls
+│   ├── environment_config.py      # Project-wide constants related to the environment
 │   ├── warehouse_level_1.json     # Warehouse environment configs
 │   ├── warehouse_level_2.json
 │   └── warehouse_level_3.json
@@ -135,6 +172,7 @@ root/
 ```
 
 ---
+
 ## Environment Overview
 
 The project implements a **continuous 2D environment** where an agent navigates through a world with obstacles and goals. The environment uses physics simulation for realistic movement and collision detection.
@@ -142,6 +180,7 @@ The project implements a **continuous 2D environment** where an agent navigates 
 ### Agent Capabilities
 
 **Sensors:**
+
 - **Ray sensors**: 8 directional sensors that detect distance to obstacles
 - **Position awareness**: Agent knows its current (x, y) coordinates
 - **Orientation**: Agent tracks its rotation angle
@@ -158,6 +197,7 @@ Environments are defined using `.json` configuration files in the `environment/`
 - **Environment dimensions**: Size (x, y) of the 2D world (`"extents"`)
 
 Example environment file structure:
+
 ```json
 {
     "name": "warehouse_level_1",
