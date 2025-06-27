@@ -1,8 +1,8 @@
-import numpy as np
 import os 
 import json
 from pathlib import Path
 from warnings import warn
+import pygame
 
 class Helper:
     """
@@ -47,6 +47,7 @@ class Helper:
                 f"_eps_s{args.epsilon_start}"
                 f"_eps_e{args.epsilon_end}"
                 f"_eps_d{args.epsilon_decay}"
+                f"_tau{args.tau}"
             )
         elif agent_type == "ppo":
             return (
@@ -122,5 +123,16 @@ class Helper:
             for key, value in world_stats.items():
                 f.write(f"{key}: {value}\n")
                 print(f"{key}: {value}")
+
+    @staticmethod
+    def check_pause(env):
+        """Check if GUI is paused and wait if needed."""
+        if env.train_gui and env.gui and hasattr(env.gui, 'paused'):
+            while env.gui.paused and not env.gui.step:
+                env.gui.render(env)
+                # Break if window closed
+                if not pygame.display.get_init():
+                    return False
+        return True
 
 

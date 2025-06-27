@@ -7,3 +7,6 @@ flask-socketio>=5.3
 pillow>=9.4
 colorcet>=3.0
 pymunk>=7.0
+seaborn
+pandas
+matplotlib
